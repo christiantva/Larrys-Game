@@ -9,6 +9,7 @@
 <meta name="theme-color" content="#000000">
 <title>終電後 — after the last train</title>
 <style>
+/* ---- src/styles/main.css ---- */
   :root { --fg: #d9dee2; --dim: #7c858b; --line: rgba(217, 222, 226, 0.14); }
   html, body { margin: 0; height: 100%; background: #000; overflow: hidden; color: var(--fg);
     font-family: "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", "Yu Gothic", Meiryo, sans-serif;
@@ -120,6 +121,7 @@
 </script>
 </head>
 <body>
+<!-- ---- src/page/body.html ---- -->
 <div id="loading" class="screen">cargando</div>
 
 <div id="menu" class="screen hidden">
@@ -180,6 +182,7 @@
 <div id="fps" class="hidden"></div>
 
 <script type="module">
+// ==== src/core/config.js ====
 import * as THREE from 'three';
 
 /* =====================================================================
@@ -229,6 +232,7 @@ const CONFIG = {
 
 const DEBUG = /[?&]debug/.test(location.search);
 
+// ==== src/core/utils.js ====
 /* =====================================================================
    Utilidades
    ===================================================================== */
@@ -253,6 +257,7 @@ const lin = (hex) => { const c = new THREE.Color(hex); return [c.r, c.g, c.b]; }
 const scale3 = (c, k) => [c[0] * k, c[1] * k, c[2] * k];
 const nextFrame = () => new Promise((r) => requestAnimationFrame(() => r()));
 
+// ==== src/core/settings.js ====
 /* =====================================================================
    Ajustes (localStorage) y niveles de calidad
    ===================================================================== */
@@ -276,6 +281,7 @@ const QUALITY = {
 };
 let Q = QUALITY.medium;
 
+// ==== src/render/textures.js ====
 /* =====================================================================
    TEXTURAS PROCEDURALES (canvas) — cero assets externos
    ===================================================================== */
@@ -524,6 +530,7 @@ function tactileCanvas(kind, bump) {
   return cv;
 }
 
+// ==== src/render/sign-helpers.js ====
 /* ---------- Carteles (texto japonés real renderizado en canvas) ---------- */
 function signCanvas(w, h, draw) { const cv = mkCanvas(w, h); draw(cv.getContext('2d'), w, h); return cv; }
 function txt(g, s, x, y, size, color, { font = JP, weight = 'bold', align = 'left', base = 'middle', spacing = 0 } = {}) {
@@ -550,6 +557,7 @@ function trainIcon(g, x, y, s, fg, bg) {
   g.fillStyle = fg; g.fillRect(x + s * 0.28, y + s * 0.74, s * 0.08, s * 0.12); g.fillRect(x + s * 0.64, y + s * 0.74, s * 0.08, s * 0.12);
 }
 
+// ==== src/render/materials.js ====
 /* =====================================================================
    MATERIALES — luz "horneada" en colores de vértice + pocas luces reales
    ===================================================================== */
@@ -610,6 +618,7 @@ const MDEF = {
 };
 
 
+// ==== src/zones/assets/textures-z6-z7.js ====
 /* ---------- Texturas de las zonas 6–7 ---------- */
 Object.assign(Tex, {
   // Baldosa vieja a dos tonos (galería comercial)
@@ -708,6 +717,7 @@ Object.assign(MDEF, {
   phoneGreen: paint('pPhone', 0x2f8a52, true, 0.4), trunk: paint('pTrunk', 0x3a2a1c),
 });
 
+// ==== src/game/flags.js ====
 /* =====================================================================
    ATAJOS — puertas y persianas que se desbloquean al recorrer el mapa (solo esta sesión)
    ===================================================================== */
@@ -716,6 +726,7 @@ const condOk = (c) => !c || !!Flags[c.flag] === c.state;
 function setFlag(f) { Flags[f] = true; for (const z of Zones.cache.values()) z.refreshVariants(); }
 
 
+// ==== src/zones/assets/textures-z3-z5.js ====
 /* ---------- Texturas de las zonas 3–7 ---------- */
 Object.assign(Tex, {
   // Terrazo claro con baldosas oscuras en diagonal (vestíbulo)
@@ -828,6 +839,7 @@ Object.assign(MDEF, {
   orange: paint('pOrange', 0xd8581a), concreteGrey: paint('pConc', 0x8a8780), olive: paint('pOlive', 0x5a6040), woodBrown: paint('pBrown', 0x5a3a24), seatBlue: paint('pSeat', 0x2a62a8, true, 0.4),
 });
 
+// ==== src/render/batch.js ====
 /* =====================================================================
    GEOMETRÍA — lotes fusionados (pocas llamadas de dibujo)
    ===================================================================== */
@@ -943,6 +955,7 @@ class Batch {
   }
 }
 
+// ==== src/render/bake.js ====
 /* ---------- Horneado de luz por vértice (con oclusión por cajas) ---------- */
 function occluded(ax, ay, az, bx, by, bz, list) {
   const dx = bx - ax, dy = by - ay, dz = bz - az;
@@ -999,6 +1012,7 @@ function makeBaker(lights, occ, amb) {
   return fn;
 }
 
+// ==== src/render/effects.js ====
 /* ---------- Materiales globales de efectos ---------- */
 const GlowMat = new THREE.ShaderMaterial({
   uniforms: { uScale: { value: 400 }, uFog: { value: 0.04 } },
@@ -1023,6 +1037,7 @@ function getGlintMat() {
 }
 const TubeMat = new THREE.MeshBasicMaterial({ color: 0xffffff }); TubeMat.userData.shared = true;
 
+// ==== src/zones/zone-builder.js ====
 /* =====================================================================
    CONSTRUCTOR DE ZONAS — helpers para levantar espacios rápidamente
    ===================================================================== */
@@ -1281,6 +1296,7 @@ class ZoneCtx {
   }
 }
 
+// ==== src/zones/zone-runtime.js ====
 /* =====================================================================
    ZONA en ejecución — activar/desactivar, parpadeos, reflejos, sonido
    ===================================================================== */
@@ -1444,6 +1460,7 @@ class Zone {
   }
 }
 
+// ==== src/audio/audio-core.js ====
 /* =====================================================================
    AUDIO — todo sintetizado con Web Audio (sin archivos)
    ===================================================================== */
@@ -1830,6 +1847,7 @@ const EMIT = {
 };
 
 
+// ==== src/audio/audio-extra.js ====
 /* ---------- Audio de las zonas 3–7 ---------- */
 Object.assign(REVERBS, {
   platform: { dur: 2.8, rt: 1.9, pre: 0.016, damp: [0.65, 0.17], wet: 0.36, er: [[0.018, 0.4], [0.036, 0.3], [0.061, 0.2]] },
@@ -1913,6 +1931,7 @@ Object.assign(EMIT, {
 });
 
 
+// ==== src/audio/music.js ====
 /* =====================================================================
    MÚSICA OPCIONAL — dark ambient sintetizado: dron + pad lento + campanas suaves
    ===================================================================== */
@@ -1981,6 +2000,7 @@ const Music = {
   },
 };
 
+// ==== src/audio/silence.js ====
 /* =====================================================================
    SILENCIO DINÁMICO — a ratos se apagan los ambientes, queda la "respiración"
    del espacio y luego suena algo lejano y sutil (nunca un susto)
@@ -2013,6 +2033,7 @@ const Silence = {
   reset() { this.phase = 'idle'; this.next = rand(70, 130); AudioSys.duck(1, 0.5); },
 };
 
+// ==== src/render/world.js ====
 /* =====================================================================
    MUNDO — renderer, escena, cámara, luces compartidas
    ===================================================================== */
@@ -2038,6 +2059,7 @@ function initWorld() {
   Object.assign(World, { renderer: r, scene, camera: cam, lights, hemi, flash, flashTarget });
 }
 
+// ==== src/render/postfx.js ====
 /* =====================================================================
    POST-PROCESADO — un solo pase: aberración cromática, tono, viñeta, grano, fundido
    ===================================================================== */
@@ -2104,6 +2126,7 @@ const DynRes = {
   },
 };
 
+// ==== src/player/input.js ====
 /* =====================================================================
    INPUT — teclado + ratón (Pointer Lock)
    ===================================================================== */
@@ -2149,6 +2172,7 @@ function onLockError() {
   if (Game.state === 'playing') document.getElementById('resume').classList.remove('hidden');
 }
 
+// ==== src/player/touch.js ====
 /* =====================================================================
    CONTROLES TÁCTILES — joystick flotante (izquierda), arrastrar para mirar
    (derecha), toque corto = interactuar, y botones de correr/agacharse/linterna
@@ -2230,6 +2254,7 @@ function fitCamera() {
   $('rotate').classList.toggle('hidden', !(Touch.enabled && a < 1));
 }
 
+// ==== src/player/player.js ====
 /* =====================================================================
    JUGADOR — movimiento, colisiones AABB, escaleras, balanceo, pisadas
    ===================================================================== */
@@ -2325,6 +2350,7 @@ const Player = {
   },
 };
 
+// ==== src/player/flashlight.js ====
 /* =====================================================================
    LINTERNA — SpotLight con retraso al seguir la cámara y leve parpadeo
    ===================================================================== */
@@ -2345,6 +2371,7 @@ const Flashlight = {
   },
 };
 
+// ==== src/zones/assets/signs.js ====
 /* =====================================================================
    CARTELES (canvas) — texto japonés real
    ===================================================================== */
@@ -2520,6 +2547,7 @@ const Signs = {
   binLabel: (t) => signCanvas(128, 64, (g, w, h) => { g.fillStyle = '#2a6ac0'; g.fillRect(0, 0, w, h); txt(g, t, w / 2, h / 2, t.length > 3 ? 18 : 26, '#fff', { align: 'center' }); }),
 };
 
+// ==== src/zones/assets/signs-z3-z5.js ====
 /* ---------- Carteles de las zonas 3–5 ---------- */
 function jrLogo(g, x, y, s) { g.fillStyle = '#1aa04a'; g.fillRect(x, y, s * 1.3, s); txt(g, 'JR', x + s * 0.65, y + s * 0.52, s * 0.72, '#fff', { font: EN, align: 'center', weight: '900' }); }
 function ticketIcon(g, x, y, s, c) { g.fillStyle = c; g.fillRect(x, y + s * 0.2, s, s * 0.6); g.fillStyle = 'rgba(255,255,255,0.8)'; g.fillRect(x + s * 0.15, y + s * 0.35, s * 0.5, s * 0.08); g.fillRect(x + s * 0.15, y + s * 0.52, s * 0.35, s * 0.08); }
@@ -2681,6 +2709,7 @@ Object.assign(Signs, {
   }),
 });
 
+// ==== src/zones/assets/signs-z6-z7.js ====
 /* ---------- Carteles de las zonas 6–7 ---------- */
 const SHOPS = [
   ['高品漬物店', 'TEL 2935', '#f2efe2', '#1a1a1a', '#b02020'], ['喫茶 ルナ', 'COFFEE', '#f4e4ea', '#8a2a4a', '#4a2a1a'],
@@ -2735,6 +2764,7 @@ Object.assign(Signs, {
   }),
 });
 
+// ==== src/zones/props.js ====
 /* =====================================================================
    PROPS reutilizables
    ===================================================================== */
@@ -2762,6 +2792,7 @@ function barrierZ(B, x, z0, z1, y = 0) {
   }
 }
 
+// ==== src/zones/z1-exterior.js ====
 /* =====================================================================
    ZONA 1 — Entrada exterior de la estación (三条京阪駅, salida 2)
    ===================================================================== */
@@ -3003,6 +3034,7 @@ function buildZone1() {
   return B;
 }
 
+// ==== src/zones/z2-escalera.js ====
 /* =====================================================================
    ZONA 2 — Escalera descendente (fluorescentes fríos, azulejo cuadriculado)
    ===================================================================== */
@@ -3144,6 +3176,7 @@ function buildZone2() {
   return B;
 }
 
+// ==== src/zones/z3-vestibulo.js ====
 /* =====================================================================
    ZONA 3 — Vestíbulo de boletería (techo bajo de lamas, pilares azules, máquinas)
    ===================================================================== */
@@ -3336,6 +3369,7 @@ function buildZone3() {
   return B;
 }
 
+// ==== src/zones/z4-anden.js ====
 /* =====================================================================
    ZONA 4 — Andén con puertas de seguridad (casi silencio total)
    ===================================================================== */
@@ -3448,6 +3482,7 @@ function buildZone4() {
   return B;
 }
 
+// ==== src/zones/z5-tunel.js ====
 /* =====================================================================
    ZONA 5 — Túnel en construcción (hormigón crudo, vía con balasto, luz amarilla sucia)
    ===================================================================== */
@@ -3594,6 +3629,7 @@ function buildZone5() {
   return B;
 }
 
+// ==== src/zones/z6-galeria.js ====
 /* =====================================================================
    ZONA 6 — Galería comercial abandonada (persianas, una lámpara verdosa)
    ===================================================================== */
@@ -3756,6 +3792,7 @@ function buildZone6() {
   return B;
 }
 
+// ==== src/zones/z7-atrio.js ====
 /* =====================================================================
    ZONA 7 — Atrio circular con tragaluces (luz de luna, eco larguísimo)
    ===================================================================== */
@@ -3870,6 +3907,7 @@ function buildZone7() {
   return B;
 }
 
+// ==== src/zones/manager.js ====
 /* =====================================================================
    GESTOR DE ZONAS — solo la zona actual y las adyacentes viven en memoria
    ===================================================================== */
@@ -3940,6 +3978,7 @@ function gcShared() {
   for (const [k, t] of Object.entries(TEX)) if (k !== 'streak' && !live.has(t)) { t.dispose(); delete TEX[k]; }
 }
 
+// ==== src/game/game.js ====
 /* =====================================================================
    JUEGO — estados, fundidos, interacción, menús
    ===================================================================== */
@@ -4028,6 +4067,7 @@ function rayBox(o, d, b) {
   return t0;
 }
 
+// ==== src/ui/options.js ====
 /* ---------- Opciones (UI) ---------- */
 function syncOptionsUI() {
   document.querySelectorAll('[data-set]').forEach((el) => {
@@ -4073,6 +4113,7 @@ function applyQuality(rebuild) {
   }
 }
 
+// ==== src/game/loop.js ====
 /* =====================================================================
    BUCLE PRINCIPAL
    ===================================================================== */
@@ -4126,6 +4167,7 @@ addEventListener('resize', () => {
 // Si la app pasa a segundo plano (cambio de pestaña, llamada...), se pausa
 document.addEventListener('visibilitychange', () => { if (document.hidden && Game.state === 'playing') Game.pause(); });
 
+// ==== src/game/boot.js ====
 /* =====================================================================
    ARRANQUE
    ===================================================================== */

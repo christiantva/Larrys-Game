@@ -1,0 +1,88 @@
+/* =====================================================================
+   JUEGO — estados, fundidos, interacción, menús
+   ===================================================================== */
+const $ = (id) => document.getElementById(id);
+const Game = {
+  state: 'loading', fade: 1, fadeTarget: 1, fadeSpeed: 1, fadeDone: null, busy: false, armed: true, target: null, time: 0, optionsFrom: 'menu', started: false,
+  fadeTo(v, dur = CONFIG.FADE_TIME) {
+    this.fadeTarget = v; this.fadeSpeed = 1 / Math.max(0.01, dur);
+    return new Promise((res) => { if (this.fade === v) res(); else this.fadeDone = res; });
+  },
+  show(id) { for (const s of ['menu', 'pause', 'options', 'loading']) $(s).classList.toggle('hidden', s !== id); },
+  async start() {
+    if (this.busy) return; this.busy = true;
+    AudioSys.init(); applyAudioQuality(); enterFullscreen();
+    this.show(null);
+    await this.fadeTo(1, 0.6);
+    const z = Zones.activate('z1', 'start'); z.startAudio();
+    AudioSys.resetReverb(); z.updateReverb(true); Music.sync('z1'); Silence.reset();
+    Flashlight.on = false; Player.crouch = false; Player.eye = CONFIG.EYE_HEIGHT;
+    this.state = 'playing'; this.started = true; this.armed = false;
+    Input.requestLock(); Touch.show(true);
+    AudioSys.setWorld(1, 0.8);
+    await this.fadeTo(0, 1.6);
+    this.busy = false;
+  },
+  pause() {
+    if (this.state !== 'playing') return;
+    this.state = 'paused'; Input.keys.clear(); this.show('pause'); $('resume').classList.add('hidden'); Touch.show(false);
+    AudioSys.setWorld(0.25, 0.25); $('dot').classList.remove('on');
+  },
+  resume() {
+    this.state = 'playing'; this.show(null); AudioSys.setWorld(1, 0.3); Input.requestLock();
+    if (Touch.enabled) { enterFullscreen(); Touch.show(true); if (AudioSys.ctx && AudioSys.ctx.state !== 'running') AudioSys.ctx.resume(); }
+  },
+  async quit() {
+    if (this.busy) return; this.busy = true; this.show(null); Touch.show(false);
+    AudioSys.setWorld(0, 0.3);
+    await this.fadeTo(1, 0.6);
+    if (document.pointerLockElement) document.exitPointerLock();
+    this.state = 'menu';
+    const z = Zones.activate('z1', null); z.stopAudio(); Music.zone = null; Music.sync();
+    Flashlight.on = false;
+    this.show('menu');
+    await this.fadeTo(0, 1.2);
+    this.busy = false;
+  },
+  openOptions(from) { this.optionsFrom = from; syncOptionsUI(); this.show('options'); },
+  closeOptions() { this.show(this.optionsFrom); },
+  // Cambio de zona con fundido a negro
+  async transition(to, spawn, wait = 0) {
+    if (this.busy) return; this.busy = true;
+    if (wait) await new Promise((r) => setTimeout(r, wait * 1000));
+    AudioSys.setWorld(0, 0.25);
+    await this.fadeTo(1, CONFIG.FADE_TIME);
+    const z = Zones.activate(to, spawn);
+    Zones.prebuild();
+    AudioSys.resetReverb(); z.updateReverb(true); Music.sync(to);
+    this.armed = false;
+    Post.render(this.time, 1);                 // calienta shaders/texturas con la pantalla en negro
+    await nextFrame();
+    AudioSys.setWorld(1, 0.6);
+    await this.fadeTo(0, CONFIG.FADE_TIME * 1.3);
+    this.busy = false;
+  },
+  checkPortals() {
+    const z = Zones.current, p = Player.pos; let inside = null;
+    for (const pt of z.portals) { const b = pt.box; if (!condOk(pt.cond)) continue; if (p.x >= b.x0 && p.x <= b.x1 && p.z >= b.z0 && p.z <= b.z1 && p.y >= b.y0 && p.y <= b.y1) { inside = pt; break; } }
+    if (!inside) { this.armed = true; return; }
+    if (this.armed && ZONE_DEFS[inside.to]) { this.armed = false; this.transition(inside.to, inside.spawn); }
+  },
+  checkInteract(cam) {
+    const z = Zones.current, o = cam.position, d = _v.set(0, 0, -1).applyQuaternion(cam.quaternion);
+    let best = null, bd = CONFIG.INTERACT_DIST;
+    for (const it of z.inter) { if (!condOk(it.cond)) continue; const t = rayBox(o, d, it.box); if (t !== null && t < bd) { bd = t; best = it; } }
+    this.target = best; $('dot').classList.toggle('on', !!best);
+  },
+  interact() { if (this.target && !this.busy) this.target.action(); },
+};
+function rayBox(o, d, b) {
+  let t0 = 0, t1 = Infinity;
+  for (const [oa, da, mn, mx] of [[o.x, d.x, b.x0, b.x1], [o.y, d.y, b.y0, b.y1], [o.z, d.z, b.z0, b.z1]]) {
+    if (Math.abs(da) < 1e-9) { if (oa < mn || oa > mx) return null; continue; }
+    let ta = (mn - oa) / da, tb = (mx - oa) / da; if (ta > tb) { const s = ta; ta = tb; tb = s; }
+    t0 = Math.max(t0, ta); t1 = Math.min(t1, tb); if (t0 > t1) return null;
+  }
+  return t0;
+}
+

@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#000000">
+<title>終電後 — after the last train</title>
+<style>
+/*@CSS@*/
+</style>
+<!-- Three.js desde CDN con versión fijada. Necesita internet la primera vez que se abre. -->
+<script type="importmap">
+{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js" } }
+</script>
+<script>
+  // Aviso si Three.js no carga (sin conexión) o si hay un error antes de arrancar.
+  window.addEventListener('error', function (e) {
+    if (window.__booted) return;
+    var f = document.getElementById('fatal');
+    if (f) { f.classList.remove('hidden'); f.textContent = 'Error al iniciar: ' + (e.message || e); }
+  });
+  setTimeout(function () {
+    if (window.__booted) return;
+    var f = document.getElementById('fatal');
+    if (f) { f.classList.remove('hidden');
+      f.innerHTML = 'No se pudo cargar el motor 3D.<br>La primera vez necesitas conexión a internet (Three.js se descarga de cdn.jsdelivr.net). Usa Chrome, Edge o Firefox actualizados.'; }
+  }, 20000);
+</script>
+</head>
+<body>
+<!--@BODY@-->
+<script type="module">
+//@JS@
+</script>
+</body>
+</html>
