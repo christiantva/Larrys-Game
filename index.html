@@ -95,11 +95,11 @@
       <h3>Audio</h3>
       <label>Volumen general <input type="range" min="0" max="1" step="0.01" data-set="master"><output></output></label>
       <label>Ambiente <input type="range" min="0" max="1" step="0.01" data-set="ambient"><output></output></label>
-      <div class="dis" id="musicBox">
+      <div id="musicBox">
         <label class="chk">Música <input type="checkbox" data-set="musicOn"></label>
         <label>Volumen música <input type="range" min="0" max="1" step="0.01" data-set="music"><output></output></label>
       </div>
-      <div class="note" id="musicNote">la música llega en la fase 3</div>
+      <div class="note" id="musicNote">dark ambient sintetizado, distinto en cada zona</div>
     </section>
     <section>
       <h3>Gráficos</h3>
@@ -155,12 +155,16 @@ const CONFIG = {
   FLASH_INTENSITY: 9,      // linterna (candelas)
   FLASH_RANGE: 16,
   FLASH_LAG: 9,            // cuanto más alto, menos retraso al seguir la cámara
+  DYNAMIC_RES: true,       // baja la resolución interna sola si los fps caen por debajo de ~40
   // --- Audio ---
   MASTER: 0.9,
   HUM_VOLUME: 1.0,         // zumbido de fluorescentes
   FOOTSTEP_VOLUME: 0.75,
   AMBIENT_MULT: 1.0,       // resto de ambientes
   REVERB_MULT: 1.0,
+  MUSIC_LEVEL: 0.085,      // nivel de la música opcional (se mezcla con el ambiente, sin dominarlo)
+  SILENCE_MIN: 90,         // segundos entre "momentos de silencio" (mín./máx.)
+  SILENCE_MAX: 170,
 };
 
 const DEBUG = /[?&]debug/.test(location.search);
@@ -544,6 +548,105 @@ const MDEF = {
   gloss: paint('pGloss', 0x1a1c1e, true, 0.25),
   housing: { mat: () => bakedMat('housing', { color: 0xdedfe0, emissive: 0x1c2026 }), tex: 1 },
 };
+
+
+/* ---------- Texturas de las zonas 6–7 ---------- */
+Object.assign(Tex, {
+  // Baldosa vieja a dos tonos (galería comercial)
+  tileOld: () => tex('tileOld', () => {
+    const n = 8, ts = 512 / n;
+    const cv = pixels(512, 512, (x, y, o) => {
+      const i = Math.floor(x / ts), j = Math.floor(y / ts);
+      if (x % ts < 2 || y % ts < 2) { o[0] = 40; o[1] = 42; o[2] = 34; return; }
+      const dark = (i + j) % 2 === 0, h = hash2(i, j, 7), n2 = (fbm(x / 512 * 8, y / 512 * 8, 8, 8, 2, 4) - 0.5) * 20;
+      const c = dark ? [96 + h * 10, 104 + h * 8, 82] : [176 + h * 10, 170 + h * 8, 140];
+      o[0] = c[0] + n2; o[1] = c[1] + n2; o[2] = c[2] + n2;
+    });
+    const g = cv.getContext('2d'), R = mulberry32(17); g.strokeStyle = 'rgba(20,20,10,0.5)'; g.lineWidth = 1.2;
+    for (let k = 0; k < 7; k++) { let x = R() * 512, y = R() * 512; g.beginPath(); g.moveTo(x, y); for (let s = 0; s < 6; s++) { x += (R() - 0.5) * 60; y += (R() - 0.5) * 60; g.lineTo(x, y); } g.stroke(); }
+    return toTex(grime(cv, 0.45, 18, 3));
+  }),
+  plasterOld: () => tex('plasterOld', () => {
+    const cv = pixels(512, 512, (x, y, o) => {
+      const n = fbm(x / 512 * 4, y / 512 * 4, 4, 4, 4, 23), m = fbm(x / 512 * 2, y / 512 * 2, 2, 2, 3, 24);
+      const v = 170 + (n - 0.5) * 50 + (hash2(x, y, 3) - 0.5) * 10; o[0] = v * (0.92 + m * 0.06); o[1] = v * (0.98 + m * 0.04); o[2] = v * 0.8;
+    });
+    const g = cv.getContext('2d'), R = mulberry32(25);
+    for (let k = 0; k < 18; k++) { const x = R() * 512, w = 3 + R() * 18, y = R() * 260, l = 80 + R() * 260;
+      const gr = g.createLinearGradient(0, y, 0, y + l); gr.addColorStop(0, 'rgba(50,46,20,0.35)'); gr.addColorStop(1, 'rgba(50,46,20,0)'); g.fillStyle = gr; g.fillRect(x, y, w, l); }
+    g.fillStyle = 'rgba(30,34,20,0.5)'; g.fillRect(0, 440, 512, 72);
+    return toTex(grime(cv, 0.45, 26));
+  }),
+  marble: () => tex('marble', () => {
+    const cv = pixels(1024, 1024, (x, y, o) => {
+      const i = Math.floor(x / 256), j = Math.floor(y / 256);
+      if (x % 256 < 2 || y % 256 < 2) { o[0] = 120; o[1] = 120; o[2] = 124; return; }
+      const v1 = fbm(x / 1024 * 6 + i * 3.1, y / 1024 * 6, 6, 6, 4, 31 + i + j * 4);
+      const vein = Math.pow(1 - Math.abs(Math.sin((x + y * 0.6) / 1024 * 18 + v1 * 9)), 14);
+      const h = hash2(i, j, 5) * 10, v = 196 + h - vein * 34 + (v1 - 0.5) * 18;
+      o[0] = v; o[1] = v - 2; o[2] = v - 6;
+    });
+    return toTex(cv);
+  }),
+  marbleWall: () => tex('marbleWall', () => {
+    const cv = pixels(512, 512, (x, y, o) => { const v = 190 + (fbm(x / 512 * 4, y / 512 * 4, 4, 4, 3, 41) - 0.5) * 22; o[0] = v; o[1] = v - 4; o[2] = v - 12; });
+    const g = cv.getContext('2d'); g.fillStyle = 'rgba(60,50,40,0.5)'; for (let i = 0; i < 2; i++) { g.fillRect(i * 256, 0, 2, 512); g.fillRect(0, i * 256, 512, 2); }
+    return toTex(grime(cv, 0.15, 42));
+  }),
+  galleryWall: () => tex('galleryWall', () => {
+    const cv = pixels(512, 512, (x, y, o) => { const v = 120 + (hash2(x, y, 3) - 0.5) * 8; o[0] = v; o[1] = v; o[2] = v + 6; });
+    const g = cv.getContext('2d');
+    g.fillStyle = '#0d1016'; g.fillRect(60, 120, 180, 300); g.fillRect(300, 120, 160, 300);
+    g.fillStyle = 'rgba(120,150,200,0.12)'; g.fillRect(70, 130, 60, 280); g.fillRect(310, 130, 50, 280);
+    g.fillStyle = '#3a3e46'; g.fillRect(146, 120, 6, 300); g.fillRect(376, 120, 6, 300);
+    return toTex(grime(cv, 0.2, 44));
+  }),
+  windowBand: () => tex('windowBand', () => {
+    const cv = mkCanvas(256, 256), g = cv.getContext('2d');
+    const gr = g.createLinearGradient(0, 0, 0, 256); gr.addColorStop(0, '#9fc2ff'); gr.addColorStop(0.55, '#6f98e6'); gr.addColorStop(1, '#38549a');
+    g.fillStyle = gr; g.fillRect(0, 0, 256, 256);
+    g.fillStyle = 'rgba(255,255,255,0.18)'; g.beginPath(); g.moveTo(20, 256); g.lineTo(120, 0); g.lineTo(160, 0); g.lineTo(60, 256); g.fill();
+    g.fillStyle = '#10141c'; for (let i = 0; i <= 4; i++) g.fillRect(i * 64 - 4, 0, 8, 256); for (let j = 0; j <= 4; j++) g.fillRect(0, j * 64 - 3, 256, 6);
+    return toTex(cv);
+  }),
+  skylight: () => tex('skylight', () => {
+    const cv = mkCanvas(256, 256), g = cv.getContext('2d');
+    const gr = g.createRadialGradient(128, 128, 10, 128, 128, 128); gr.addColorStop(0, '#d8e6ff'); gr.addColorStop(1, '#5a7cc0');
+    g.fillStyle = gr; g.fillRect(0, 0, 256, 256); g.fillStyle = '#121620';
+    for (let i = 0; i < 6; i++) { g.fillRect(i * 51, 0, 5, 256); g.fillRect(0, i * 51, 256, 5); }
+    return toTex(cv, { repeat: false });
+  }),
+  patch: () => tex('patch', () => {
+    const cv = mkCanvas(256, 256), g = cv.getContext('2d'); g.fillStyle = '#000'; g.fillRect(0, 0, 256, 256);
+    g.filter = 'blur(6px)'; g.fillStyle = '#fff';
+    for (let i = 0; i < 2; i++) for (let j = 0; j < 3; j++) g.fillRect(30 + i * 104, 20 + j * 74, 90, 62);
+    g.filter = 'none'; return toTex(cv, { repeat: false });
+  }),
+  shaft: () => tex('shaft', () => {
+    const cv = mkCanvas(128, 256), g = cv.getContext('2d');
+    const gy = g.createLinearGradient(0, 0, 0, 256); gy.addColorStop(0, '#fff'); gy.addColorStop(1, '#000'); g.fillStyle = gy; g.fillRect(0, 0, 128, 256);
+    g.globalCompositeOperation = 'multiply'; const gx = g.createLinearGradient(0, 0, 128, 0);
+    gx.addColorStop(0, '#000'); gx.addColorStop(0.3, '#fff'); gx.addColorStop(0.7, '#fff'); gx.addColorStop(1, '#000'); g.fillStyle = gx; g.fillRect(0, 0, 128, 256);
+    return toTex(cv, { repeat: false });
+  }),
+  barber: () => tex('barber', () => {
+    const cv = mkCanvas(128, 256), g = cv.getContext('2d'); g.fillStyle = '#f2f2ee'; g.fillRect(0, 0, 128, 256);
+    for (let k = -6; k < 12; k++) { g.fillStyle = k % 2 ? '#c42020' : '#2040a0'; g.beginPath(); g.moveTo(0, k * 32); g.lineTo(128, k * 32 + 64); g.lineTo(128, k * 32 + 80); g.lineTo(0, k * 32 + 16); g.fill(); }
+    return toTex(cv);
+  }),
+});
+
+/* ---------- Materiales nuevos (zonas 6–7) ---------- */
+Object.assign(MDEF, {
+  tileOld: { mat: () => bakedMat('tileOld', { map: Tex.tileOld(), std: true, rough: 0.55 }), tex: 1.6 },
+  plasterOld: { mat: () => bakedMat('plasterOld', { map: Tex.plasterOld() }), tex: 2.0 },
+  marble: { mat: () => bakedMat('marble', { map: Tex.marble(), std: true, rough: 0.09 }), tex: 4.8, seg: 1.0 },
+  marbleWall: { mat: () => bakedMat('marbleWall', { map: Tex.marbleWall(), std: true, rough: 0.35 }), tex: 2.4 },
+  galleryWall: { mat: () => bakedMat('galleryWall', { map: Tex.galleryWall() }), tex: 3.0 },
+  barber: { mat: () => bakedMat('barber', { map: Tex.barber() }), tex: 0.5 },
+  leaf: paint('pLeaf', 0x22402a), soil: paint('pSoil', 0x1e1610), seatGrey: paint('pSeatG', 0x565a62), cardboard: paint('pCard', 0x8a6a42),
+  phoneGreen: paint('pPhone', 0x2f8a52, true, 0.4), trunk: paint('pTrunk', 0x3a2a1c),
+});
 
 /* =====================================================================
    ATAJOS — puertas y persianas que se desbloquean al recorrer el mapa (solo esta sesión)
@@ -933,19 +1036,26 @@ class ZoneCtx {
       const m = new THREE.MeshLambertMaterial({ map: t, vertexColors: true, transparent: !!o.alpha, alphaTest: o.alpha ? 0.5 : 0 }); m.onBeforeCompile = bakePatch; this.owned.mat.push(m);
       return new Batch(m, { seg: o.seg ?? 0.5 });
     });
-    const f = this.frame(c, facing, w, h, o.off ?? 0.006), r = o.uv || [0, 0, 1, 1];
-    B.quad(f.o, f.a, f.b, { uv: 'local', normal: f.n, offset: [r[0], r[1]], repeat: [r[2] - r[0], r[3] - r[1]], seg: o.seg });
+    this.placeQuad(B, c, facing, w, h, o);
     return B;
+  }
+  // Coloca un plano con UV local: marco frente a una pared, o 4 esquinas libres (o.quad)
+  placeQuad(B, c, facing, w, h, o) {
+    const r = o.uv || [0, 0, 1, 1], uvo = { uv: 'local', offset: [r[0], r[1]], repeat: [r[2] - r[0], r[3] - r[1]], seg: o.seg };
+    if (o.quad) { const q = o.quad; B.quad4(q[0], q[1], q[2], q[3], { ...uvo, normal: o.normal }); return; }
+    const f = this.frame(c, facing, w, h, o.off ?? 0.006); B.quad(f.o, f.a, f.b, { ...uvo, normal: f.n });
   }
   // Cartel con luz propia (emisivo, valores HDR). Mismas opciones que poster()
   glowSign(cv, c, facing, w, h, k = 1.6, o = {}) {
     const B = this.ownBatch('G:' + (o.key || 'gsign' + this.batches.size), () => {
       const t = toTex(typeof cv === 'function' ? cv() : cv, { repeat: false }); this.owned.tex.push(t);
-      const m = new THREE.MeshBasicMaterial({ map: t, color: new THREE.Color(k, k, k), transparent: !!o.alpha, alphaTest: o.alpha ? 0.5 : 0 }); this.owned.mat.push(m);
-      return new Batch(m, { noBake: true, seg: 10 });
+      const m = new THREE.MeshBasicMaterial({ map: t, color: new THREE.Color(k, k, k), transparent: !!o.alpha || !!o.additive, alphaTest: o.alpha ? 0.5 : 0 });
+      if (o.additive) { m.blending = THREE.AdditiveBlending; m.depthWrite = false; }
+      if (o.twoSided) m.side = THREE.DoubleSide;
+      this.owned.mat.push(m);
+      return new Batch(m, { noBake: true, seg: 10, order: o.additive ? 3 : 0 });
     });
-    const f = this.frame(c, facing, w, h, o.off ?? 0.006), r = o.uv || [0, 0, 1, 1];
-    B.quad(f.o, f.a, f.b, { uv: 'local', normal: f.n, offset: [r[0], r[1]], repeat: [r[2] - r[0], r[3] - r[1]] });
+    this.placeQuad(B, c, facing, w, h, { ...o, seg: 10 });
     return B;
   }
   emissiveBox(color, k, x0, y0, z0, x1, y1, z1, o = {}) {
@@ -1033,7 +1143,7 @@ class ZoneCtx {
     if (wall && o.ends !== false) for (const e of [pts[0], pts[pts.length - 1]]) this.cyl(key, e, [e[0] + wall[0] * dist, e[1], e[2] + wall[1] * dist], r, 8);
   }
   // --- Iluminación ---
-  grp(id, mode) { const g = this.groups[id] || (this.groups[id] = { id, mode: 'rare', tubes: [], glows: [], glints: [], real: null, emitters: [], level: 1 }); if (mode) g.mode = mode; return g; }
+  grp(id, mode) { const g = this.groups[id] || (this.groups[id] = { id, mode: 'rare', tubes: [], glows: [], glints: [], mats: [], real: null, emitters: [], level: 1 }); if (mode) g.mode = mode; return g; }
   bake(L) { this.lights.push(L); }
   glow(p, color, size) { this.glowsP.push({ p, color, size }); return this.glowsP.length - 1; }
   glint(o) {
@@ -1129,7 +1239,12 @@ class Zone {
     for (const g of Object.values(this.groups)) if (g.mode === 'faulty') g.next = rand(3, 9);
   }
   // Muestra la geometría que corresponde al estado actual de los atajos
-  refreshVariants() { for (const o of this.variants) o.visible = condOk(o.userData.cond); }
+  refreshVariants() { for (const o of this.variants) if (!o.userData.rising) o.visible = condOk(o.userData.cond); }
+  // Anima hacia arriba (persiana) la geometría que desaparece al desbloquear 'flag'
+  raise(flag) {
+    this.rising = this.variants.filter((o) => o.userData.cond.flag === flag && o.userData.cond.state === false);
+    for (const o of this.rising) o.userData.rising = true; this.riseT = 0;
+  }
   activate() {
     this.refreshVariants();
     World.scene.add(this.group);
@@ -1168,6 +1283,7 @@ class Zone {
       a.needsUpdate = true;
     }
     if (g.real != null && this.real[g.real]) { const L = World.lights[g.real]; L.intensity = (L.userData.base || 0) * lv; }
+    for (const m of g.mats) m.mat.color.copy(m.base).multiplyScalar(lerp(0.04, 1, lv));
     for (const i of g.emitters) { const e = this.emitters[i]; if (e) e.setLevel(lv > 0.45 ? Math.min(1, lv * 1.1) : 0, 0.008); }
   }
   flicker(g, long) {
@@ -1179,6 +1295,11 @@ class Zone {
     this.flicks.push({ g, seq, i: -1, t: 0, prev: 1 });
   }
   update(dt, time, cam) {
+    if (this.rising) {
+      this.riseT += dt; const k = smooth(0, 2.6, this.riseT);
+      for (const o of this.rising) { o.position.y = k * 2.15; o.updateMatrix(); o.updateMatrixWorld(true); }
+      if (this.riseT >= 2.6) { for (const o of this.rising) { o.userData.rising = false; o.position.y = 0; o.updateMatrix(); } this.rising = null; this.refreshVariants(); }
+    }
     // --- parpadeos aleatorios ---
     const gl = Object.values(this.groups);
     this.nextFlicker -= dt;
@@ -1318,12 +1439,14 @@ const AudioSys = {
     this.out.connect(this.comp); this.comp.connect(c.destination);
     this.analyser = c.createAnalyser(); this.analyser.fftSize = 2048; this.comp.connect(this.analyser);
     this.world = c.createGain(); this.world.gain.value = 0; this.world.connect(this.out);   // fundidos de mundo
-    this.amb = c.createGain(); this.amb.connect(this.world);                                  // ambiente seco
+    this.duckG = c.createGain(); this.duckG.connect(this.world);                          // silencio dinámico
+    this.amb = c.createGain(); this.amb.connect(this.duckG);  // ambiente seco
+    this.room = c.createGain(); this.room.connect(this.world); // tono de sala (no se atenúa)
     this.ambSend = c.createGain();                                                            // ambiente → reverb
     this.sfx = c.createGain(); this.sfx.connect(this.world);                                  // pisadas y acciones
     this.sfxSend = c.createGain();
     this.music = c.createGain(); this.music.connect(this.out);
-    this.revIn = c.createGain(); this.ambSend.connect(this.revIn); this.sfxSend.connect(this.revIn);
+    this.revIn = c.createGain(); this.duckS = c.createGain(); this.ambSend.connect(this.duckS); this.duckS.connect(this.revIn); this.sfxSend.connect(this.revIn);
     this.slots = [0, 1].map(() => { const g = c.createGain(); g.gain.value = 0; g.connect(this.world); return { conv: null, gain: g }; });
     this.white = makeNoise(c, 'white', 3); this.pink = makeNoise(c, 'pink', 5); this.brown = makeNoise(c, 'brown', 5);
     this.ready = true; this.applyVolumes();
@@ -1333,9 +1456,10 @@ const AudioSys = {
     const t = this.ctx.currentTime;
     this.out.gain.setTargetAtTime(S.master * CONFIG.MASTER, t, 0.05);
     const a = S.ambient * CONFIG.AMBIENT_MULT;
-    this.amb.gain.setTargetAtTime(a, t, 0.05); this.ambSend.gain.setTargetAtTime(a, t, 0.05);
+    this.amb.gain.setTargetAtTime(a, t, 0.05); this.ambSend.gain.setTargetAtTime(a, t, 0.05); this.room.gain.setTargetAtTime(a, t, 0.05);
     this.sfx.gain.setTargetAtTime(CONFIG.FOOTSTEP_VOLUME, t, 0.05); this.sfxSend.gain.setTargetAtTime(CONFIG.FOOTSTEP_VOLUME, t, 0.05);
     this.music.gain.setTargetAtTime(S.musicOn ? S.music : 0, t, 0.3);
+    Music.sync();
   },
   setWorld(v, tc = 0.3) { if (this.ready) this.world.gain.setTargetAtTime(v, this.ctx.currentTime, tc); },
   level() { // RMS de la salida (para pruebas)
@@ -1406,8 +1530,10 @@ const AudioSys = {
     const c = this.ctx, em = { def, nodes: [], level: 1, update: null, dead: false };
     em.gain = (def.gain ?? 0.05) * (def.type === 'hum' || def.type === 'sign' ? CONFIG.HUM_VOLUME : 1);
     em.out = this.gain(0); em.send = this.gain(def.send ?? 0.6);
-    if (def.pos) { em.panner = this.panner(def.pos, def.ref ?? 1.2, def.roll ?? 1.3); em.out.connect(em.panner); em.panner.connect(this.amb); em.panner.connect(em.send); }
-    else { em.out.connect(this.amb); em.out.connect(em.send); }
+    const bus = def.type === 'roomtone' ? this.room : this.amb;
+    if (def.pos) { em.panner = this.panner(def.pos, def.ref ?? 1.2, def.roll ?? 1.3); em.out.connect(em.panner); em.panner.connect(bus); em.panner.connect(em.send); }
+    else { em.out.connect(bus); em.out.connect(em.send); }
+    if (def.type === 'roomtone') em.send.gain.value = 0.15;
     em.send.connect(this.ambSend);
     (EMIT[def.type] || EMIT.hum)(this, em, def);
     em.out.gain.setTargetAtTime(em.gain, c.currentTime, 0.5);
@@ -1726,6 +1852,107 @@ Object.assign(EMIT, {
   },
 });
 
+
+/* =====================================================================
+   MÚSICA OPCIONAL — dark ambient sintetizado: dron + pad lento + campanas suaves
+   ===================================================================== */
+// Tonalidad por zona: nota MIDI raíz del dron + acordes (semitonos sobre la raíz)
+const MUSIC_KEYS = {
+  z1: { root: 38, chords: [[12, 15, 19, 22], [10, 14, 17, 21], [8, 12, 15, 19]] },
+  z2: { root: 37, chords: [[12, 15, 19, 24], [11, 14, 18, 23], [9, 12, 16, 21]] },
+  z3: { root: 40, chords: [[11, 16, 19, 23], [9, 13, 16, 21], [14, 18, 21, 25]] },
+  z4: { root: 33, chords: [[12, 15, 19, 22], [10, 15, 17, 22]] },
+  z5: { root: 29, chords: [[12, 13, 19, 20], [11, 15, 18, 22]] },
+  z6: { root: 32, chords: [[12, 15, 18, 22], [13, 17, 20, 24]] },
+  z7: { root: 34, chords: [[11, 16, 19, 26], [9, 14, 17, 24], [12, 16, 19, 23]] },
+};
+const mtof = (m) => 440 * Math.pow(2, (m - 69) / 12);
+const Music = {
+  layer: null, zone: null,
+  // Se llama al cambiar de zona o de ajustes
+  sync(zoneId) {
+    if (zoneId) this.zone = zoneId;
+    const want = AudioSys.ready && S.musicOn && this.zone && MUSIC_KEYS[this.zone];
+    if (!want) { this.fadeOut(); return; }
+    if (this.layer && this.layer.zone === this.zone) return;
+    this.fadeOut(); this.layer = this.makeLayer(this.zone);
+  },
+  fadeOut() {
+    const L = this.layer; if (!L) return; this.layer = null;
+    const t = AudioSys.ctx.currentTime; L.out.gain.cancelScheduledValues(t); L.out.gain.setValueAtTime(L.out.gain.value, t); L.out.gain.linearRampToValueAtTime(0, t + 5);
+    setTimeout(() => { for (const n of L.nodes) { try { n.stop(); } catch (e) { /* ya parado */ } } try { L.out.disconnect(); } catch (e) { /* nada */ } }, 5600);
+  },
+  makeLayer(zone) {
+    const A = AudioSys, c = A.ctx, K = MUSIC_KEYS[zone], t = c.currentTime;
+    const L = { zone, nodes: [], voices: [], chord: 0, next: rand(18, 30), bell: rand(8, 16), out: A.gain(0) };
+    L.out.connect(A.music); const send = A.gain(0.55); L.out.connect(send); send.connect(A.revIn);
+    L.out.gain.setValueAtTime(0, t); L.out.gain.linearRampToValueAtTime(CONFIG.MUSIC_LEVEL, t + 7);
+    // dron
+    const lp = A.filt('lowpass', 380, 0.5); lp.connect(L.out);
+    for (const [m, type, g] of [[0, 'sine', 0.5], [12, 'triangle', 0.12], [7, 'sine', 0.1]]) {
+      const o = c.createOscillator(); o.type = type; o.frequency.value = mtof(K.root + m) * rand(0.999, 1.001);
+      const og = A.gain(g); o.connect(og); og.connect(lp); o.start(); L.nodes.push(o);
+    }
+    // pad de 4 voces (2 sierras desafinadas por voz, filtro con LFO muy lento)
+    const pf = A.filt('lowpass', 650, 0.4); pf.connect(L.out);
+    const lfo = c.createOscillator(), lg = A.gain(280); lfo.frequency.value = rand(0.03, 0.06); lfo.connect(lg); lg.connect(pf.frequency); lfo.start(); L.nodes.push(lfo);
+    K.chords[0].forEach((m) => {
+      const v = { oscs: [] }, vg = A.gain(0.045);
+      for (const det of [-7, 6]) { const o = c.createOscillator(); o.type = 'sawtooth'; o.frequency.value = mtof(K.root + m); o.detune.value = det + rand(-2, 2); o.connect(vg); o.start(); v.oscs.push(o); L.nodes.push(o); }
+      const tr = c.createOscillator(), tg = A.gain(0.012); tr.frequency.value = rand(0.07, 0.15); tr.connect(tg); tg.connect(vg.gain); tr.start(); L.nodes.push(tr);
+      vg.connect(pf); L.voices.push(v);
+    });
+    return L;
+  },
+  update(dt) {
+    const L = this.layer; if (!L) return; const A = AudioSys, c = A.ctx, K = MUSIC_KEYS[L.zone];
+    L.next -= dt; L.bell -= dt;
+    if (L.next <= 0 && K.chords.length > 1) {   // cambio de acorde lentísimo (glissando de 4 s)
+      L.next = rand(20, 34); L.chord = (L.chord + 1) % K.chords.length; const ch = K.chords[L.chord], t = c.currentTime;
+      L.voices.forEach((v, i) => { for (const o of v.oscs) o.frequency.setTargetAtTime(mtof(K.root + ch[i]), t, 1.6); });
+    }
+    if (L.bell <= 0) {                          // campana suave, casi inaudible, con mucha cola
+      L.bell = rand(10, 22); const ch = K.chords[L.chord], m = K.root + pick(ch) + 24, t = c.currentTime + 0.05;
+      const o = c.createOscillator(), o2 = c.createOscillator(), g = A.gain(0); o.frequency.value = mtof(m); o2.frequency.value = mtof(m) * 2.76;
+      const g2 = A.gain(0.18); o2.connect(g2); g2.connect(g); o.connect(g); g.connect(L.out);
+      g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(0.05, t + 0.6); g.gain.exponentialRampToValueAtTime(0.0002, t + 6);
+      o.start(t); o2.start(t); o.stop(t + 6.2); o2.stop(t + 6.2);
+    }
+  },
+};
+
+/* =====================================================================
+   SILENCIO DINÁMICO — a ratos se apagan los ambientes, queda la "respiración"
+   del espacio y luego suena algo lejano y sutil (nunca un susto)
+   ===================================================================== */
+Object.assign(AudioSys, {
+  // Atenúa ambientes (no la sala ni las pisadas)
+  duck(v, time) { if (!this.ready) return; const t = this.ctx.currentTime; for (const g of [this.duckG, this.duckS]) { g.gain.cancelScheduledValues(t); g.gain.setValueAtTime(g.gain.value, t); g.gain.linearRampToValueAtTime(v, t + time); } },
+  // Un sonido lejano y sutil, con mucha reverberación
+  distantEvent() {
+    if (!this.ready) return; const c = this.ctx, t = c.currentTime + 0.05;
+    const out = this.gain(0.6), wet = this.gain(1.0), lp = this.filt('lowpass', 900, 0.5);
+    if (c.createStereoPanner) { const p = c.createStereoPanner(); p.pan.value = rand(-0.8, 0.8); lp.connect(p); p.connect(out); p.connect(wet); } else { lp.connect(out); lp.connect(wet); }
+    out.connect(this.sfx); wet.connect(this.sfxSend);
+    const kind = pick(['clank', 'door', 'shutter', 'gust', 'clank', 'door']);
+    if (kind === 'clank') { this.metalHit(lp, t, 0.25, rand(180, 320)); this.metalHit(lp, t + rand(0.3, 0.7), 0.12, rand(200, 300)); }
+    else if (kind === 'door') { this.thumpTo(lp, t, 55, 0.5); this.metalHit(lp, t + 0.02, 0.08, 600); }
+    else if (kind === 'shutter') { for (let k = 0; k < 10; k++) this.metalHit(lp, t + k * rand(0.04, 0.08), 0.06 * Math.exp(-k / 5), rand(200, 300)); }
+    else { const s = this.loop('pink'), bp = this.filt('bandpass', 380, 0.8), g = this.gain(0); g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(0.5, t + 2); g.gain.linearRampToValueAtTime(0, t + 5); s.connect(bp); bp.connect(g); g.connect(lp); s.stop(t + 5.2); }
+    setTimeout(() => { try { out.disconnect(); wet.disconnect(); } catch (e) { /* nada */ } }, 9000);
+  },
+});
+const Silence = {
+  phase: 'idle', next: rand(70, 130), t: 0,
+  update(dt) {
+    if (!AudioSys.ready || Game.state !== 'playing') return;
+    if (this.phase === 'idle') { this.next -= dt; if (this.next <= 0) { this.phase = 'quiet'; this.t = rand(9, 16); AudioSys.duck(0.1, 4); } }
+    else if (this.phase === 'quiet') { this.t -= dt; if (this.t <= 0) { this.phase = 'event'; this.t = rand(3, 5); AudioSys.distantEvent(); } }
+    else { this.t -= dt; if (this.t <= 0) { this.phase = 'idle'; this.next = rand(CONFIG.SILENCE_MIN, CONFIG.SILENCE_MAX); AudioSys.duck(1, 7); } }
+  },
+  reset() { this.phase = 'idle'; this.next = rand(70, 130); AudioSys.duck(1, 0.5); },
+};
+
 /* =====================================================================
    MUNDO — renderer, escena, cámara, luces compartidas
    ===================================================================== */
@@ -1786,7 +2013,8 @@ const Post = {
     const q = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), this.mat); q.frustumCulled = false; this.scene.add(q);
   },
   resize() {
-    const w = Math.max(2, Math.floor(innerWidth * Q.scale)), h = Math.max(2, Math.floor(innerHeight * Q.scale));
+    const sc = Q.scale * DynRes.scale;
+    const w = Math.max(2, Math.floor(innerWidth * sc)), h = Math.max(2, Math.floor(innerHeight * sc));
     if (this.rt) this.rt.dispose();
     const ext = World.renderer.extensions, canFloat = ext.has('EXT_color_buffer_float') || ext.has('EXT_color_buffer_half_float');
     this.rt = new THREE.WebGLRenderTarget(w, h, { type: canFloat ? THREE.HalfFloatType : THREE.UnsignedByteType, samples: Q.samples, depthBuffer: true, stencilBuffer: false });
@@ -1798,6 +2026,21 @@ const Post = {
     const r = World.renderer;
     r.setRenderTarget(this.rt); r.render(World.scene, World.camera);
     r.setRenderTarget(null); r.render(this.scene, this.cam);
+  },
+};
+
+// Resolución dinámica: si el equipo no llega (~40 fps), baja la resolución interna; si sobra, la sube
+const DynRes = {
+  scale: 1, acc: 0, n: 0, slow: 0, fast: 0, last: performance.now(),
+  update() {
+    const now = performance.now(), dt = now - this.last; this.last = now;
+    if (!CONFIG.DYNAMIC_RES || Game.state !== 'playing' || Game.busy || dt > 250) return;
+    this.acc += dt; this.n++;
+    if (this.acc < 1000) return;
+    const avg = this.acc / this.n; this.acc = 0; this.n = 0;
+    if (avg > 24) { this.slow++; this.fast = 0; } else if (avg < 15) { this.fast++; this.slow = 0; } else { this.slow = 0; this.fast = 0; }
+    if (this.slow >= 2 && this.scale > 0.55) { this.scale = Math.max(0.55, this.scale - 0.12); this.slow = 0; Post.resize(); }
+    else if (this.fast >= 6 && this.scale < 1) { this.scale = Math.min(1, this.scale + 0.08); this.fast = 0; Post.resize(); }
   },
 };
 
@@ -2293,6 +2536,60 @@ Object.assign(Signs, {
   }),
 });
 
+/* ---------- Carteles de las zonas 6–7 ---------- */
+const SHOPS = [
+  ['高品漬物店', 'TEL 2935', '#f2efe2', '#1a1a1a', '#b02020'], ['喫茶 ルナ', 'COFFEE', '#f4e4ea', '#8a2a4a', '#4a2a1a'],
+  ['理容 ミヤコ', 'BARBER', '#e8eef4', '#1a3a7a', '#c02020'], ['古書 一文堂', '古本 買入', '#efe4cc', '#3a2a14', '#6a4a20'],
+  ['クリーニング', '白鳥', '#e4f0f4', '#1a5a7a', '#1a5a7a'], ['たばこ・塩', '', '#c42a25', '#ffffff', '#ffe0a0'],
+  ['時計・メガネ', '正確堂', '#f0f0e6', '#1a1a1a', '#2a5a2a'], ['和菓子 松屋', '', '#2a4a2a', '#f4e8c8', '#f4e8c8'],
+  ['鮮魚 魚よし', '', '#e8f2f8', '#103a6a', '#c02020'], ['靴修理', '合鍵', '#f2f2ea', '#4a2a10', '#c06010'],
+  ['質 大黒屋', '', '#1a1a1a', '#f0d070', '#f0d070'], ['手芸 ひまわり', '毛糸', '#f8ecc0', '#a05a10', '#a05a10'],
+  ['中華そば 昇龍', 'ラーメン', '#c41e1e', '#fff4c8', '#fff4c8'], ['写真 フジ', 'DPE', '#f0f4f0', '#1a6a3a', '#c02020'],
+  ['化粧品 ハナ', '', '#f8e8f0', '#8a2060', '#8a2060'], ['貸店舗', '入居者募集', '#f4f4f0', '#3a3a3a', '#c02020'],
+];
+Object.assign(Signs, {
+  shops: () => signCanvas(1024, 1024, (g, w, h) => {
+    SHOPS.forEach(([a, b, bg, fg, ac], i) => {
+      const x = (i % 2) * 512, y = Math.floor(i / 2) * 128;
+      g.fillStyle = bg; g.fillRect(x + 4, y + 6, 504, 116); g.strokeStyle = ac; g.lineWidth = 5; g.strokeRect(x + 10, y + 12, 492, 104);
+      txt(g, a, x + (b ? 30 : 256), y + 66, a.length > 6 ? 46 : 56, fg, { align: b ? 'left' : 'center', weight: '900' });
+      if (b) txt(g, b, x + 488, y + 70, 30, ac, { align: 'right', font: /[A-Z]/.test(b) ? EN : JP });
+      g.fillStyle = 'rgba(40,30,10,0.25)'; g.fillRect(x + 4, y + 96, 504, 26);
+    });
+    grime(g.canvas, 0.35, 77, 4);
+  }),
+  closing: () => signCanvas(256, 340, (g, w, h) => {
+    g.fillStyle = '#f2eee0'; g.fillRect(0, 0, w, h); txt(g, '閉店のお知らせ', w / 2, 38, 30, '#1a1a1a', { align: 'center' });
+    g.fillStyle = '#1a1a1a'; g.fillRect(24, 64, w - 48, 2);
+    txt(g, '長い間ご愛顧いただき', w / 2, 98, 18, '#222', { align: 'center' }); txt(g, '誠にありがとうございました', w / 2, 126, 18, '#222', { align: 'center' });
+    fineLines(g, 30, 160, w - 60, 110, 7, 'rgba(30,30,30,0.5)', 5); txt(g, '店主', w - 40, 300, 18, '#222', { align: 'right' });
+    grime(g.canvas, 0.3, 6, 2);
+  }),
+  phone: () => signCanvas(256, 96, (g, w, h) => { g.fillStyle = '#2f8a52'; g.fillRect(0, 0, w, h); txt(g, '公衆電話', w / 2, 50, 46, '#fff', { align: 'center' }); }),
+  buttonBox: () => signCanvas(128, 192, (g, w, h) => {
+    g.fillStyle = '#8a8e90'; g.fillRect(0, 0, w, h); g.fillStyle = '#20262a'; g.fillRect(14, 14, w - 28, 40); txt(g, 'シャッター', w / 2, 34, 20, '#fff', { align: 'center' });
+    g.fillStyle = '#2aa04a'; g.beginPath(); g.arc(40, 100, 20, 0, PI * 2); g.fill(); g.fillStyle = '#c42020'; g.beginPath(); g.arc(88, 100, 20, 0, PI * 2); g.fill();
+    txt(g, '開', 40, 146, 26, '#111', { align: 'center' }); txt(g, '閉', 88, 146, 26, '#111', { align: 'center' });
+  }),
+  banner: () => signCanvas(320, 640, (g, w, h) => {
+    const gr = g.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, '#1d5a52'); gr.addColorStop(1, '#0e2e3a'); g.fillStyle = gr; g.fillRect(0, 0, w, h);
+    g.fillStyle = '#e8e4d0'; for (let k = 0; k < 4; k++) { g.beginPath(); g.moveTo(0, 470 + k * 30); for (let x = 0; x <= w; x += 20) g.lineTo(x, 470 + k * 30 + Math.sin(x / 30 + k) * 12); g.lineTo(w, h); g.lineTo(0, h); g.closePath(); g.globalAlpha = 0.25 + k * 0.15; g.fill(); }
+    g.globalAlpha = 1; g.fillStyle = '#1a2a2a'; g.beginPath(); g.moveTo(70, 460); g.lineTo(250, 460); g.lineTo(220, 500); g.lineTo(100, 500); g.fill(); g.fillRect(156, 330, 8, 130);
+    g.fillStyle = '#e8e0c8'; g.beginPath(); g.moveTo(164, 340); g.lineTo(240, 440); g.lineTo(164, 440); g.fill();
+    ['北', '前', '船'].forEach((c, i) => txt(g, c, w / 2, 80 + i * 78, 70, '#f4efe0', { align: 'center', weight: '900' }));
+    txt(g, '寄港地 展', w / 2, 304, 26, '#f4efe0', { align: 'center' });
+  }),
+  expo: () => signCanvas(1024, 512, (g, w, h) => {
+    const cells = [
+      (x) => { g.fillStyle = '#d8c8a4'; g.fillRect(x, 0, 256, 512); g.fillStyle = '#5a4a32'; g.fillRect(x + 30, 80, 196, 150); g.fillStyle = '#2a2014'; g.fillRect(x + 60, 150, 140, 60); txt(g, '鉄道の歴史展', x + 128, 290, 30, '#3a2a14', { align: 'center' }); fineLines(g, x + 30, 330, 196, 140, 8, 'rgba(60,40,20,0.5)', 3); },
+      (x) => { g.fillStyle = '#f2f2ec'; g.fillRect(x, 0, 256, 512); g.fillStyle = '#1a1a1a'; g.beginPath(); g.arc(x + 80, 230, 34, 0, PI * 2); g.arc(x + 170, 230, 34, 0, PI * 2); g.fill(); g.fillRect(x + 40, 140, 170, 70); g.fillRect(x + 180, 100, 30, 50); txt(g, '蒸気機関車', x + 128, 330, 30, '#1a1a1a', { align: 'center' }); fineLines(g, x + 30, 370, 196, 110, 6, 'rgba(30,30,30,0.5)', 4); },
+      (x) => { g.fillStyle = '#e8f0e4'; g.fillRect(x, 0, 256, 512); g.strokeStyle = '#2a62c8'; g.lineWidth = 6; g.beginPath(); g.moveTo(x + 30, 400); g.bezierCurveTo(x + 90, 200, x + 160, 300, x + 230, 80); g.stroke(); g.strokeStyle = '#e4002b'; g.beginPath(); g.moveTo(x + 20, 200); g.lineTo(x + 236, 260); g.stroke(); txt(g, '路線の変遷', x + 128, 460, 30, '#1a3a1a', { align: 'center' }); },
+      (x) => { g.fillStyle = '#1f3e7a'; g.fillRect(x, 0, 256, 512); g.strokeStyle = 'rgba(220,235,255,0.8)'; g.lineWidth = 2; for (let i = 0; i < 8; i++) { g.strokeRect(x + 30 + i * 6, 60 + i * 30, 196 - i * 12, 120); } txt(g, '駅舎 設計図', x + 128, 420, 30, '#e0ecff', { align: 'center' }); },
+    ];
+    cells.forEach((f, i) => f(i * 256));
+  }),
+});
+
 /* =====================================================================
    PROPS reutilizables
    ===================================================================== */
@@ -2392,7 +2689,7 @@ function buildZone1() {
   B.box('grey', 2.4, 2.12, FZ, 3.5, 2.17, FZ + 0.05); B.box('grey', 2.4, 0, FZ, 2.45, 2.12, FZ + 0.05); B.box('grey', 3.45, 0, FZ, 3.5, 2.12, FZ + 0.05);
   B.cyl('metal', [3.28, 1.0, FZ + 0.04], [3.28, 1.0, FZ + 0.1], 0.02, 6, { caps: true }); B.cyl('metal', [3.28, 1.0, FZ + 0.1], [3.15, 1.0, FZ + 0.1], 0.016, 6, { caps: true });
   B.box('steel', 3.75, 0.9, FZ, 4.15, 1.45, FZ + 0.12); // caja eléctrica
-  B.interact({ x0: 2.45, x1: 3.45, y0: 0, y1: 2.12, z0: FZ - 0.05, z1: FZ + 0.1 }, () => AudioSys.doorRattle([2.95, 1.0, FZ + 0.1]));
+  B.door({ box: { x0: 2.45, x1: 3.45, y0: 0, y1: 2.12, z0: FZ - 0.05, z1: FZ + 0.1 }, to: 'z7', spawn: 'fromZ1', flag: 'steel', pos: [2.95, 1.0, FZ + 0.1] });
   // ---------- Rellano superior ----------
   B.floor('floorTile', OX0, OX1, -5.8, FZ, 0);
   B.ground(OX0 - 0.02, OX1, -5.8, FZ + 0.01, 0, 'tile');
@@ -2556,6 +2853,7 @@ function buildZone1() {
   // ---------- Puntos de aparición ----------
   B.spawn('start', 3.4, 1.5, yawTo(-3.4, -5.7));
   B.spawn('fromBelow', -8.4, -4.6, yawTo(1, 0));
+  B.spawn('steelDoor', 2.95, -2.2, PI);
   B.menuCam = { p: [4.3, 1.5, 2.3], t: [-1.0, 1.25, -4.4] };
   return B;
 }
@@ -2872,7 +3170,7 @@ function buildZone3() {
   B.tactile('bars', -3.65, -3.35, Z0 + 1.1, -0.15, 0, 'z'); B.tactile('dots', -3.65, -3.35, Z0 + 0.8, Z0 + 1.1, 0);
   B.tactile('bars', -3.35, 5.55, -0.15, 0.15, 0, 'x'); B.tactile('dots', 5.55, 5.85, -0.45, 0.45, 0);
   B.tactile('bars', 8.1, SW0 - 0.6, -0.15, 0.15, 0, 'x'); B.tactile('dots', SW0 - 0.6, SW0 - 0.3, -SZ, SZ, 0);
-  B.tactile('bars', -4.65, -4.35, 0.15, Z1 + 1.5, 0, 'z');
+  B.tactile('dots', -5.35, -5.05, -0.15, 0.15, 0); B.tactile('bars', -5.35, -5.05, 0.15, Z1 + 1.5, 0, 'z');
   // ---------- Sonido ----------
   B.emitter({ type: 'hum', pos: [-11.2, CH - 0.1, 2.4], gain: 0.045, group: 'ent' });
   B.emitter({ type: 'hum', pos: [-3.6, CH - 0.1, -6], gain: 0.045, group: 'mach' });
@@ -3152,16 +3450,295 @@ function buildZone5() {
 }
 
 /* =====================================================================
+   ZONA 6 — Galería comercial abandonada (persianas, una lámpara verdosa)
+   ===================================================================== */
+function buildZone6() {
+  const B = new ZoneCtx('z6');
+  B.fog = { color: [0.012, 0.019, 0.009], density: 0.065 };
+  B.ambient = [0.007, 0.01, 0.005];
+  B.hemi = { sky: 0x2a3a24, ground: 0x0c0e08, I: 0.12 };
+  B.reverb = 'gallery';
+  const CH = 2.7, sick = 0xc4f0a0, R = mulberry32(606);
+  // ---------- Pasillos (suelo, techo y caminable) ----------
+  const rects = [[-22, 2.0, -1.2, 1.2], [2.0, 9.0, -5.0, 1.2], [6.6, 9.0, -16.0, -5.0], [-8, 6.6, -11.2, -8.8], [-3.2, -0.8, -8.8, -1.2], [-11.2, -8.8, 1.2, 9.0]];
+  for (const [x0, x1, z0, z1] of rects) {
+    B.floor('tileOld', x0, x1, z0, z1, 0); B.ceil('ceilPanel', x0, x1, z0, z1, CH, { seg: 1.0 });
+    B.ground(x0 - 0.01, x1 + 0.01, z0 - 0.01, z1 + 0.01, 0, 'tile');
+  }
+  // ---------- Paredes ----------
+  const P = 'plasterOld', ao = { ao: { b: 0.4, t: 0.3, rad: 0.3 } };
+  B.wallZ(P, -1.2, -22, -3.2, 0, CH, 1, ao); B.wallZ(P, -1.2, -0.8, 2.0, 0, CH, 1, ao);
+  B.wallZ(P, 1.2, -22, -11.2, 0, CH, -1, ao); B.wallZ(P, 1.2, -8.8, 9.0, 0, CH, -1, ao);
+  B.wallX(P, -22, -1.2, 1.2, 0, CH, 1);
+  B.wallZ(P, -5.0, 2.0, 6.6, 0, CH, 1, ao); B.wallX(P, 2.0, -5.0, -1.2, 0, CH, 1, ao);
+  B.wallX(P, 9.0, -16.0, 1.2, 0, CH, -1, ao);
+  B.wallX(P, 6.6, -16.0, -11.2, 0, CH, 1, ao); B.wallX(P, 6.6, -8.8, -5.0, 0, CH, 1, ao);
+  B.wallZ(P, -11.2, -8, 6.6, 0, CH, 1, ao); B.wallZ(P, -8.8, -8, -3.2, 0, CH, -1, ao); B.wallZ(P, -8.8, -0.8, 6.6, 0, CH, -1, ao);
+  B.wallX(P, -3.2, -8.8, -1.2, 0, CH, 1, ao); B.wallX(P, -0.8, -8.8, -1.2, 0, CH, -1, ao);
+  B.wallX(P, -11.2, 1.2, 9.0, 0, CH, 1, ao); B.wallX(P, -8.8, 1.2, 9.0, 0, CH, -1, ao); B.wallZ(P, 9.0, -11.2, -8.8, 0, CH, -1, ao);
+  // ---------- Tiendas cerradas: persiana + rótulo encima ----------
+  let si = 0;
+  const shop = (axis, c, a, b, facing, idx, opt = {}) => {
+    const n = facing, k = idx ?? si++ % 16, u = (k % 2) / 2, v = 1 - (Math.floor(k / 2) + 1) / 8, m = (a + b) / 2, w = b - a;
+    if (axis === 'z') {
+      B.box('shutter', a, 0, Math.min(c, c + n * 0.06), b, 2.15, Math.max(c, c + n * 0.06), { seg: 0.7, skip: ['ny'] });
+      B.box('dark', a - 0.05, 2.15, Math.min(c, c + n * 0.2), b + 0.05, 2.25, Math.max(c, c + n * 0.2));
+      (opt.lit ? B.glowSign.bind(B) : B.poster.bind(B))(Signs.shops, [m, 2.45, c], n > 0 ? '+z' : '-z', Math.min(w, 2.4), 0.32, ...(opt.lit ? [opt.lit] : []), { key: opt.lit ? opt.litKey : 'shops', uv: [u, v, u + 0.5, v + 0.125], off: 0.01 });
+      if (opt.notice) B.poster(Signs.closing, [m + (R() - 0.5) * 0.6, 1.35, c + n * 0.06], n > 0 ? '+z' : '-z', 0.3, 0.4, { key: 'closing' });
+    } else {
+      B.box('shutter', Math.min(c, c + n * 0.06), 0, a, Math.max(c, c + n * 0.06), 2.15, b, { seg: 0.7, skip: ['ny'] });
+      B.box('dark', Math.min(c, c + n * 0.2), 2.15, a - 0.05, Math.max(c, c + n * 0.2), 2.25, b + 0.05);
+      (opt.lit ? B.glowSign.bind(B) : B.poster.bind(B))(Signs.shops, [c, 2.45, m], n > 0 ? '+x' : '-x', Math.min(w, 2.4), 0.32, ...(opt.lit ? [opt.lit] : []), { key: opt.lit ? opt.litKey : 'shops', uv: [u, v, u + 0.5, v + 0.125], off: 0.01 });
+      if (opt.notice) B.poster(Signs.closing, [c + n * 0.06, 1.35, m + (R() - 0.5) * 0.6], n > 0 ? '+x' : '-x', 0.3, 0.4, { key: 'closing' });
+    }
+  };
+  // pasillo A
+  shop('z', -1.2, -21, -18.4, 1, 3, { notice: true }); shop('z', -1.2, -17.6, -15, 1, 6); shop('z', -1.2, -14.2, -11.6, 1, 10, { notice: true });
+  shop('z', -1.2, -10.8, -8.2, 1, 4); shop('z', -1.2, -7.4, -4.8, 1, 15);
+  shop('z', 1.2, -21, -18.4, -1, 8); shop('z', 1.2, -17.6, -15, -1, 13, { notice: true }); shop('z', 1.2, -14.6, -12, -1, 11);
+  shop('z', 1.2, -8.2, -5.6, -1, 2); shop('z', 1.2, -4.8, -2.2, -1, 9); shop('z', 1.2, -1.4, 1.2, -1, 7); shop('z', 1.2, 3.0, 5.6, -1, 14, { notice: true }); shop('z', 1.2, 6.4, 8.6, -1, 12);
+  // pasillo C (norte)
+  shop('x', 6.6, -15.6, -13.2, 1, 5); shop('x', 9.0, -15.4, -12.8, -1, 12); shop('x', 9.0, -12.2, -9.6, -1, 1, { lit: 1.5, litKey: 'shopsLuna' }); shop('x', 9.0, -9.0, -6.4, -1, 6, { notice: true });
+  // pasillo E
+  shop('z', -11.2, -6.8, -4.2, 1, 9); shop('z', -11.2, -3.4, -0.8, 1, 13, { notice: true }); shop('z', -11.2, 0, 2.6, 1, 12, { lit: 0.7, litKey: 'shopsDim' }); shop('z', -11.2, 3.4, 6.0, 1, 4);
+  shop('z', -8.8, -6.8, -4.4, -1, 15); shop('z', -8.8, 0, 2.6, -1, 10); shop('z', -8.8, 3.4, 6.0, -1, 3);
+  // pasillos F y D
+  shop('x', -3.2, -7.8, -5.2, 1, 11, { notice: true }); shop('x', -0.8, -7.8, -5.2, -1, 8); shop('x', -0.8, -4.6, -2.0, -1, 14);
+  shop('x', -11.2, 2.0, 4.6, 1, 2, { notice: true }); shop('x', -11.2, 5.4, 8.0, 1, 7); shop('x', -8.8, 2.0, 4.6, -1, 5);
+  // quiosco en la esquina (como en la imagen de referencia): "高品漬物店 TEL 2935"
+  B.box('plasterOld', 4.2, 2.25, -3.2, 6.2, CH, -1.7, { skip: ['ny', 'py'] });
+  B.box('shutter', 4.25, 0, -3.15, 6.15, 2.25, -1.75, { skip: ['ny', 'py'], seg: 0.7 });
+  B.box('dark', 4.1, 2.25, -3.3, 6.3, 2.35, -1.6, { skip: ['py'] });
+  B.poster(Signs.shops, [5.2, 2.05, -1.69], '+z', 1.5, 0.22, { key: 'shops', uv: [0, 7 / 8, 0.5, 1], off: 0.003 });
+  B.glowSign(Signs.shops, [6.21, 2.05, -2.45], '+x', 1.2, 0.22, 0.7, { key: 'shopsDim', uv: [0, 7 / 8, 0.5, 1], off: 0.003 });
+  B.collider(4.2, 6.2, -3.2, -1.7);
+  // ---------- Techo: tubos, conductos y paneles que faltan ----------
+  for (const [x0, x1, z] of [[-22, 2, -0.7], [-22, 2, -0.5]]) B.cyl('rust', [x0, CH - 0.12, z], [x1, CH - 0.12, z], 0.05, 6);
+  B.box('metal', -22, CH - 0.32, 0.4, 9.0, CH - 0.02, 0.9);
+  B.cyl('grey', [7.2, CH - 0.15, -16], [7.2, CH - 0.15, 1.2], 0.06, 6); B.cyl('rust', [-8, CH - 0.1, -10.6], [6.6, CH - 0.1, -10.6], 0.045, 6);
+  for (let k = 0; k < 14; k++) { const r = rects[k % 5]; const x = lerp(r[0] + 0.6, r[1] - 0.6, R()), z = lerp(r[2] + 0.4, r[3] - 0.4, R()); B.emissiveBox(0x000000, 0, x - 0.3, CH - 0.004, z - 0.3, x + 0.3, CH - 0.003, z + 0.3); }
+  for (const [x, z, ax] of [[-15, 0, 'x'], [-6, 0, 'x'], [7.8, -10, 'z'], [-2, -10, 'x'], [-10, 5, 'z']]) B.tube({ p: [x, CH - 0.06, z], axis: ax, len: 1.2, color: 0xd8e4cc, dead: true });
+  B.poster(Signs.stain(), [-12, CH - 0.004, 0.1], '-y', 2.0, 2.0, { alpha: true }); B.poster(Signs.stain(), [7.8, CH - 0.004, -12], '-y', 1.6, 1.6, { alpha: true });
+  // ---------- Luces ----------
+  // la única lámpara colgante verdosa (luz real 0)
+  const LX = 3.3, LZ = -0.5, LY = 2.0;
+  B.cyl('black', [LX, CH, LZ], [LX, LY + 0.2, LZ], 0.008, 4);
+  B.cyl('metal', [LX, LY + 0.2, LZ], [LX, LY + 0.02, LZ], 0.04, 10, { r2: 0.24, caps: true });
+  B.emissiveBox(sick, 6, LX - 0.06, LY - 0.06, LZ - 0.06, LX + 0.06, LY + 0.03, LZ + 0.06);
+  const g0 = B.glow([LX, LY - 0.05, LZ], scale3(lin(sick), 0.35), 1.6);
+  B.realDefs[0] = { p: [LX, LY - 0.15, LZ], color: lin(sick), I: 7, range: 10, group: 'lamp', bake: { p: [LX, LY - 0.15, LZ], color: lin(sick), I: 7, range: 10, dir: [0, -1, 0], dmin: 0.35 } };
+  { const g = B.grp('lamp', 'rare'); g.real = 0; g.glows.push(g0); }
+  B.glint({ L: [LX, LY, LZ], fy: 0, color: lin(sick), k: 0.5, size: 0.7, len: 1.0, b: [-22, 9, -5, 1.2], group: 'lamp' });
+  // rótulo "喫茶 ルナ" aún encendido, con un fallo (luz real 1, parpadeo frecuente)
+  B.realDefs[1] = { p: [8.4, 2.3, -10.9], color: lin(0xffc8d8), I: 2.4, range: 6, group: 'luna', bake: { p: [8.4, 2.3, -10.9], color: lin(0xffc8d8), I: 2.4, range: 6, dir: [-1, -0.4, 0], dmin: 0.2 } };
+  { const g = B.grp('luna', 'faulty'); g.real = 1; const sb = B.batches.get('G:shopsLuna'); if (sb) g.mats.push({ mat: sb.mat, base: sb.mat.color.clone() }); }
+  // luz fría junto a la escalera de salida (luz real 2)
+  B.tube({ p: [7.8, CH - 0.06, -14.6], axis: 'z', len: 1.2, color: 0xd8e8d0, I: 4, range: 8, real: 2, group: 'exit', flicker: 'rare' });
+  // luces de emergencia tenues
+  for (const [x, z, f] of [[-16, -1.18, '+z'], [-10, 8.98, '-z'], [-4, -11.18, '+z'], [-20, 1.18, '-z']]) {
+    const nz = f === '+z' ? 1 : -1;
+    B.emissiveBox(0xffd8a0, 2.2, x - 0.12, 2.32, Math.min(z, z + nz * 0.06), x + 0.12, 2.4, Math.max(z, z + nz * 0.06));
+    B.bake({ p: [x, 2.3, z + nz * 0.3], color: lin(0xffd8a0), I: 0.7, range: 4.5, dir: [0, -0.6, nz], dmin: 0.2 });
+    B.glow([x, 2.36, z + nz * 0.1], [0.05, 0.035, 0.02], 0.4);
+  }
+  // escaparate de comida de plástico (中華そば) con luz tenue
+  B.box('glassDark', 0.2, 0.6, -11.18, 2.4, 1.5, -11.0, { skip: ['ny', 'nz'] });
+  for (let k = 0; k < 6; k++) B.cyl(pick(['orange', 'cream', 'red', 'yellow']), [0.45 + k * 0.33, 0.66, -11.1], [0.45 + k * 0.33, 0.74, -11.1], 0.12, 10, { caps: true });
+  B.bake({ p: [1.3, 1.4, -10.8], color: lin(0xffd8a0), I: 0.8, range: 3, dir: [0, -0.5, 1], dmin: 0.1 });
+  // ---------- Detalles: teléfono público, banco, cajas, poste de barbero, máquina rota ----------
+  B.box('phoneGreen', -10.9, 0.8, 6.6, -10.5, 1.4, 7.1); B.box('grey', -10.95, 0, 6.7, -10.6, 0.8, 7.0);
+  B.poster(Signs.phone(), [-10.48, 1.55, 6.85], '+x', 0.4, 0.15); B.collider(-11.0, -10.45, 6.55, 7.15);
+  B.box('woodBrown', 2.6, 0.42, -4.7, 4.0, 0.47, -4.3); for (const x of [2.7, 3.9]) B.box('dark', x - 0.03, 0, -4.65, x + 0.03, 0.42, -4.35); B.collider(2.55, 4.05, -4.75, -4.25);
+  for (const [x, z, s] of [[-19.5, 0.7, 0.5], [-19.0, 0.8, 0.4], [-19.3, 0.75, 0.35]]) B.box('cardboard', x - s / 2, s === 0.35 ? 0.5 : 0, z - s / 2, x + s / 2, (s === 0.35 ? 0.5 : 0) + s, z + s / 2);
+  B.collider(-19.8, -18.75, 0.4, 1.2);
+  B.cyl('barber', [-8.15, 1.0, 1.05], [-8.15, 1.9, 1.05], 0.08, 10, { caps: true, uvScale: [1, 1] });
+  B.box('white', -11.0, 0, 7.95, -10.0, 1.83, 9.0, { skip: ['pz'] });
+  B.glowSign(Signs.vending, [-10.5, 0.95, 7.95], '-z', 0.9, 1.72, 0.9, { key: 'vendBroken', off: 0.004 });
+  { const g = B.grp('vend', 'faulty'); const sb = B.batches.get('G:vendBroken'); g.mats.push({ mat: sb.mat, base: sb.mat.color.clone() }); }
+  B.bake({ p: [-10.5, 1.0, 7.4], color: lin(0xdfeeff), I: 2.2, range: 5, dir: [0, 0, -1], dmin: 0.05 }); B.collider(-11.05, -9.95, 7.9, 9.0);
+  { const g = new THREE.CircleGeometry(1, 16); g.rotateX(-PI / 2); B.bt('puddle').geo(g, new THREE.Matrix4().makeScale(0.9, 1, 0.6).setPosition(-12, 0.006, 0.2)); B.surface(-12.7, -11.3, -0.3, 0.6, 0, 'puddle', 3); }
+  // ---------- Atajo: persiana hacia el vestíbulo (zona 3) con botonera ----------
+  B.box('grey', -8, 2.2, -11.2, -7.7, CH, -8.8);
+  B.when('arcade', false, () => {
+    B.box('shutter', -8.05, 0, -11.2, -7.95, 2.2, -8.8, { seg: 0.6 }); B.collider(-8.2, -7.85, -11.2, -8.8);
+    B.interact({ x0: -8.1, x1: -7.9, y0: 0, y1: 2.2, z0: -11.2, z1: -8.8 }, () => AudioSys.shutterRattle([-8, 1.1, -10]));
+  });
+  B.when('arcade', true, () => {
+    B.floor('tileOld', -10.6, -8, -11.2, -8.8, 0); B.ground(-10.6, -7.99, -11.2, -8.8, 0, 'tile');
+    B.wallZ(P, -11.2, -10.6, -8, 0, 2.2, 1); B.wallZ(P, -8.8, -10.6, -8, 0, 2.2, -1); B.ceil('ceilPanel', -10.6, -8, -11.2, -8.8, 2.2);
+    B.emissiveBox(0x000000, 0, -10.58, 0, -11.15, -10.57, 2.2, -8.85);
+    B.portal({ x0: -11, x1: -9.3, z0: -11.2, z1: -8.8, y0: -1, y1: 3 }, 'z3', 'fromZ6');
+  });
+  B.emissiveBox(0xffd8a0, 2.2, -7.5, 2.32, -11.2, -7.26, 2.4, -11.14);
+  B.bake({ p: [-7.4, 2.25, -10.8], color: lin(0xffd8a0), I: 0.9, range: 4.5, dir: [0, -0.6, 1], dmin: 0.2 });
+  B.box('grey', -7.6, 1.0, -11.2, -7.2, 1.6, -11.1);
+  B.poster(Signs.buttonBox(), [-7.4, 1.3, -11.1], '+z', 0.3, 0.45, { off: 0.003 });
+  B.interact({ x0: -7.65, x1: -7.15, y0: 0.9, y1: 1.7, z0: -11.25, z1: -10.95 }, () => {
+    if (Flags.arcade) { AudioSys.buttonPress([-7.4, 1.3, -11]); return; }
+    AudioSys.buttonPress([-7.4, 1.3, -11]); AudioSys.shutterMotor([-8, 1.2, -10]); Zones.current.raise('arcade'); setFlag('arcade');
+  });
+  // ---------- Escalera de salida (sube hacia el atrio, zona 7) ----------
+  B.stairs({ axis: 'z', sTop: -20.8, sBot: -16, w0: 6.6, w1: 9.0, yTop: 2.72, yBot: 0, n: 16 });
+  B.floor('tileOld', 6.6, 9.0, -21.6, -20.8, 2.72); B.ground(6.6, 9.0, -21.6, -20.79, 2.72, 'tile');
+  B.wallX(P, 6.6, -21.6, -16, 0, 2.72 + CH, 1); B.wallX(P, 9.0, -21.6, -16, 0, 2.72 + CH, -1);
+  B.slopeCeil('ceilPanel', 'z', -16, -20.8, CH, 2.72 + CH, 6.6, 9.0); B.ceil('ceilPanel', 6.6, 9.0, -21.6, -20.8, 2.72 + CH);
+  B.wallZ(P, -21.6, 6.6, 9.0, 2.72 + 2.3, 2.72 + CH, 1);
+  B.glowSign(Tex.windowBand().image, [7.8, 2.72 + 1.15, -21.6], '+z', 2.4, 2.3, 0.45, { key: 'door', off: 0.002 });
+  for (const x of [6.67, 8.93]) B.rail([[x, 0.85, -15.5], [x, 0.85, -16], [x, 2.72 + 0.85, -20.8], [x, 2.72 + 0.85, -21.2]], [x < 7 ? -1 : 1, 0], { key: 'rust' });
+  B.bake({ p: [7.8, 2.72 + 1.2, -21.2], color: lin(0x7a9ae0), I: 2.5, range: 7, dir: [0, -0.2, 1], dmin: 0.2 });
+  B.portal({ x0: 6.6, x1: 9.0, z0: -21.8, z1: -19.8, y0: 1.5, y1: 6 }, 'z7', 'fromZ6');
+  B.reverbArea({ x0: 6.6, x1: 9.0, z0: -22, z1: -16, y0: -1, y1: 7 }, 'stairwell');
+  // puerta al túnel (vuelta a la zona 5)
+  B.box('steel', -22, 0, -0.5, -21.95, 2.0, 0.5, { seg: 0.6 }); B.box('rust', -22, 2.0, -0.56, -21.92, 2.08, 0.56);
+  B.cyl('metal', [-21.95, 1.0, 0.35], [-21.88, 1.0, 0.35], 0.018, 6, { caps: true });
+  B.door({ box: { x0: -22.1, x1: -21.8, y0: 0, y1: 2.0, z0: -0.5, z1: 0.5 }, to: 'z5', spawn: 'fromZ6', pos: [-21.9, 1, 0] });
+  // ---------- Sonido ----------
+  B.emitter({ type: 'hum', pos: [LX, LY, LZ], gain: 0.05, group: 'lamp', sizzle: 2.0, harm: [0.7, 0.5, 0.3, 0.2] });
+  B.emitter({ type: 'sign', pos: [8.9, 2.45, -10.9], gain: 0.04, group: 'luna' });
+  B.emitter({ type: 'vending', pos: [-10.5, 0.9, 7.6], gain: 0.05, group: 'vend' });
+  B.emitter({ type: 'tick', pos: [-16.3, 1.2, -1.3], gain: 0.12, ref: 1.0 });
+  B.emitter({ type: 'vent', pos: [-6, CH - 0.2, 0.6], gain: 0.04, ref: 3 });
+  B.emitter({ type: 'drip', pos: [-12, CH - 0.1, 0.2], gain: 0.22, send: 1.0, min: 3, max: 9 });
+  B.emitter({ type: 'drip', pos: [7.8, CH - 0.1, -12], gain: 0.18, send: 1.0, min: 5, max: 12 });
+  B.emitter({ type: 'creak', pos: [-2, 2.2, -6], gain: 0.2, min: 14, max: 34 });
+  B.emitter({ type: 'hum', pos: [7.8, CH - 0.1, -14.6], gain: 0.04, group: 'exit' });
+  B.emitter({ type: 'wind', pos: [7.8, 3.5, -20.5], gain: 0.03, ref: 2 });
+  B.emitter({ type: 'rumble', gain: 0.18, first: 25 });
+  B.emitter({ type: 'roomtone', gain: 0.06 });
+  B.spawn('fromZ5', -20.8, 0, -PI / 2);
+  B.spawn('fromZ3', -6.6, -10, -PI / 2);
+  B.spawn('fromZ7', 7.8, -15.0, PI);
+  return B;
+}
+
+/* =====================================================================
+   ZONA 7 — Atrio circular con tragaluces (luz de luna, eco larguísimo)
+   ===================================================================== */
+function buildZone7() {
+  const B = new ZoneCtx('z7');
+  B.fog = { color: [0.011, 0.016, 0.03], density: 0.02 };
+  B.ambient = [0.01, 0.014, 0.026];
+  B.hemi = { sky: 0x34466e, ground: 0x0a0c12, I: 0.2 };
+  B.reverb = 'atrium';
+  const RA = 14, N = 40, moon = 0x8fb0ff, H1 = 4.5, H2 = 9.0, HW = 12.4, HT = 15.6, RI = 11;
+  const P = (r, a, y) => [r * Math.cos(a), y, r * Math.sin(a)];
+  const inCorr = (a) => Math.abs(Math.cos(a) * RA) < 1.7 && Math.sin(a) > 0;   // hueco del pasillo sur
+  // ---------- Suelo pulido ----------
+  B.floor('marble', -RA, RA, -RA, RA, 0, { seg: 1.0 });
+  for (let z = -RA; z < RA; z += 1.0) { const zf = Math.max(Math.abs(z), Math.abs(z + 1)), hw = Math.sqrt(Math.max(0, (RA - 0.5) ** 2 - zf * zf)); if (hw > 0.6) B.ground(-hw, hw, z, z + 1.0, 0, 'marble'); }
+  // ---------- Muro circular, galerías, ventanal corrido y techo ----------
+  for (let i = 0; i < N; i++) {
+    const a0 = (i / N) * PI * 2, a1 = ((i + 1) / N) * PI * 2, am = (a0 + a1) / 2, nIn = [-Math.cos(am), 0, -Math.sin(am)];
+    if (!inCorr(am)) B.bt('marbleWall').quad4(P(RA, a0, 0), P(RA, a1, 0), P(RA, a1, H1), P(RA, a0, H1), { normal: nIn });
+    else B.bt('marbleWall').quad4(P(RA, a0, 3.0), P(RA, a1, 3.0), P(RA, a1, H1), P(RA, a0, H1), { normal: nIn });
+    for (const [y0, y1] of [[H1, H2], [H2 + 0.3, HW]]) B.bt('galleryWall').quad4(P(RA, a0, y0 + 0.3), P(RA, a1, y0 + 0.3), P(RA, a1, y1), P(RA, a0, y1), { normal: nIn, uv: 'local', repeat: [1, 1] });
+    for (const y of [H1, H2]) {                     // losas de las galerías
+      B.bt('ceilPanel').quad4(P(RI, a0, y), P(RA, a0, y), P(RA, a1, y), P(RI, a1, y), { normal: [0, -1, 0] });
+      B.bt('white').quad4(P(RI, a0, y), P(RI, a1, y), P(RI, a1, y + 0.3), P(RI, a0, y + 0.3), { normal: [Math.cos(am), 0, Math.sin(am)] });
+      B.bt('glass').quad4(P(RI + 0.05, a0, y + 0.3), P(RI + 0.05, a1, y + 0.3), P(RI + 0.05, a1, y + 1.4), P(RI + 0.05, a0, y + 1.4), { normal: [Math.cos(am), 0, Math.sin(am)] });
+      B.cyl('metal', P(RI + 0.05, a0, y + 1.42), P(RI + 0.05, a1, y + 1.42), 0.025, 6);
+    }
+    B.glowSign(Tex.windowBand().image, P(RA - 0.05, am, (HW + HT) / 2), null, 0, 0, 1.25, { key: 'win', quad: [P(RA - 0.05, a0, HW), P(RA - 0.05, a1, HW), P(RA - 0.05, a1, HT), P(RA - 0.05, a0, HT)], normal: nIn });
+    B.bt('ceilDark').quad4(P(4, a0, HT), P(RA, a0, HT), P(RA, a1, HT), P(4, a1, HT), { normal: [0, -1, 0] });
+    if (i % 2 === 0) {                                // luz de luna que entra por el ventanal (horneada)
+      const lp = P(RA - 0.6, am, (HW + HT) / 2);
+      B.bake({ p: lp, color: lin(moon), I: 26, range: 34, dir: [-Math.cos(am) * 0.7, -0.7, -Math.sin(am) * 0.7], dmin: 0.12, bounce: 0.1 });
+    }
+    if (i % 3 === 0) B.glint({ L: P(RA - 0.1, am, (HW + HT) / 2), fy: 0, color: lin(moon), k: 0.32, size: 1.6, len: 1.8, b: [-RA + 0.5, RA - 0.5, -RA + 0.5, RA - 0.5] });
+  }
+  // tragaluz circular
+  B.glowSign(Tex.skylight().image, [0, HT + 0.02, 0], '-y', 8, 8, 0.9, { key: 'sky' });
+  B.bake({ p: [0, HT - 0.5, 0], color: lin(0xa8c4ff), I: 40, range: 30, dir: [0, -1, 0], dmin: 0.2, occ: false });
+  B.glint({ L: [0, HT, 0], fy: 0, color: lin(0xa8c4ff), k: 0.5, size: 3.0, len: 1.4, b: [-RA, RA, -RA, RA] });
+  // haces de luz (planos aditivos muy tenues)
+  for (const [a, x, z] of [[0, 0, 0], [PI / 2.6, 0.6, -0.4], [-PI / 3, -0.5, 0.5]]) {
+    const ca = Math.cos(a) * 3, sa = Math.sin(a) * 3;
+    B.glowSign(Tex.shaft().image, [x, 7.8, z], null, 0, 0, 0.06, { key: 'shaft', additive: true, quad: [[x - ca, 0.2, z - sa], [x + ca, 0.2, z + sa], [x + ca, HT, z + sa], [x - ca, HT, z - sa]], twoSided: true });
+  }
+  // manchas de luz de luna en el suelo
+  for (let k = 0; k < 5; k++) { const a = PI * 0.15 + k * 0.32; B.glowSign(Tex.patch().image, [Math.cos(a) * 7.5, 0.012, Math.sin(a) * 7.5 - 2], '+y', 2.4, 2.0, 0.08, { key: 'patch', additive: true }); }
+  // columnas
+  for (let k = 0; k < 8; k++) { const a = (k / 8) * PI * 2 + PI / 8, p = P(RI + 0.35, a, 0); B.cyl('marbleWall', p, [p[0], HT, p[2]], 0.32, 12); B.collider(p[0] - 0.35, p[0] + 0.35, p[2] - 0.35, p[2] + 0.35); }
+  // ---------- Jardinera central con árbol ----------
+  B.cyl('marbleWall', [0, 0, 0], [0, 0.48, 0], 2.2, 24); B.collider(-2.2, 2.2, -2.2, 2.2);
+  { const g = new THREE.CircleGeometry(2.15, 24); g.rotateX(-PI / 2); B.bt('soil').geo(g, new THREE.Matrix4().setPosition(0, 0.44, 0)); }
+  B.cyl('trunk', [0, 0.4, 0], [0.15, 3.6, 0.1], 0.14, 8, { r2: 0.07 });
+  for (const [x, y, z, r] of [[0.1, 3.9, 0, 1.2], [-0.6, 3.3, 0.4, 0.9], [0.7, 3.4, -0.4, 0.95], [0.2, 4.6, 0.3, 0.8], [-0.3, 4.3, -0.5, 0.75]]) {
+    const g = new THREE.IcosahedronGeometry(r, 1); B.bt('leaf').geo(g, new THREE.Matrix4().makeScale(1, 0.75, 1).setPosition(x, y, z));
+  }
+  for (let k = 0; k < 6; k++) { const a = (k / 6) * PI * 2 + 0.3, p = P(RA - 0.8, a, 0); if (inCorr(a) || Math.abs(a - PI * 1.5) < 0.3) continue;
+    B.cyl('dark', p, [p[0], 0.55, p[2]], 0.3, 10, { caps: true, r2: 0.34 }); const g = new THREE.IcosahedronGeometry(0.5, 1); B.bt('leaf').geo(g, new THREE.Matrix4().setPosition(p[0], 0.95, p[2])); B.collider(p[0] - 0.35, p[0] + 0.35, p[2] - 0.35, p[2] + 0.35); }
+  // ---------- Sillas vacías en fila frente a un estandarte ----------
+  const chair = (b) => {
+    b.box(-0.22, 0.43, -0.22, 0.22, 0.49, 0.22); b.box(0.17, 0.49, -0.22, 0.23, 0.92, 0.22);
+    for (const [x, z] of [[-0.19, -0.19], [0.19, -0.19], [-0.19, 0.19], [0.19, 0.19]]) b.box(x - 0.015, 0, z - 0.015, x + 0.015, 0.43, z + 0.015);
+  };
+  const chairs = [], R2 = mulberry32(707);
+  for (let r = 0; r < 4; r++) for (let c = 0; c < 9; c++) {
+    const x = -4.2 - r * 0.95, z = -3.2 + c * 0.8; if (r === 3 && c === 6) continue;   // falta una silla
+    chairs.push(new THREE.Matrix4().makeRotationY((R2() - 0.5) * 0.12).setPosition(x + (R2() - 0.5) * 0.06, 0, z));
+  }
+  B.instanced('seatGrey', chair, chairs);
+  for (let r = 0; r < 4; r++) B.collider(-4.45 - r * 0.95, -3.95 - r * 0.95, -3.5, 3.5);
+  B.poster(Signs.banner(), [-RA + 0.12, 2.5, 0], '+x', 1.6, 3.2, { off: 0.02 });
+  B.box('woodBrown', -11.8, 0, -0.5, -11.2, 1.1, 0.5); B.collider(-11.85, -11.15, -0.55, 0.55);
+  // caballetes con pósters (exposición)
+  for (let k = 0; k < 5; k++) {
+    const a = PI * 0.62 + k * 0.17, p = P(9.2, a, 0), yaw = Math.atan2(-p[0], -p[2]), fx = Math.sin(yaw), fz = Math.cos(yaw);
+    const c = [p[0], 1.45, p[2]], rx = Math.cos(yaw), rz = -Math.sin(yaw);
+    for (const s of [-1, 1]) B.cyl('woodBrown', [p[0] + rx * 0.35 * s, 0, p[2] + rz * 0.35 * s], [p[0] + rx * 0.28 * s - fx * 0.05, 2.0, p[2] + rz * 0.28 * s - fz * 0.05], 0.02, 5);
+    B.cyl('woodBrown', [p[0] - fx * 0.05, 1.9, p[2] - fz * 0.05], [p[0] - fx * 0.45, 0, p[2] - fz * 0.45], 0.02, 5);
+    const ku = (k % 4) / 4;
+    B.poster(Signs.expo, c, null, 0, 0, { key: 'expo', uv: [ku, 0, ku + 0.25, 1], quad: [[c[0] - rx * 0.36, 0.9, c[2] - rz * 0.36], [c[0] + rx * 0.36, 0.9, c[2] + rz * 0.36], [c[0] + rx * 0.36, 2.0, c[2] + rz * 0.36], [c[0] - rx * 0.36, 2.0, c[2] - rz * 0.36]], normal: [fx, 0, fz] });
+    B.collider(p[0] - 0.4, p[0] + 0.4, p[2] - 0.4, p[2] + 0.4);
+  }
+  // ---------- Pasillo sur con escalera hacia la galería (zona 6) ----------
+  B.floor('marble', -1.6, 1.6, RA - 0.6, 18, 0); B.ground(-1.6, 1.6, RA - 0.7, 18.01, 0, 'marble');
+  B.wallX('marbleWall', -1.6, RA - 0.4, 22, -2.8, 3.0, 1); B.wallX('marbleWall', 1.6, RA - 0.4, 22, -2.8, 3.0, -1);
+  B.ceil('ceilPanel', -1.6, 1.6, RA - 0.4, 22, 3.0);
+  B.stairs({ axis: 'z', sTop: 18, sBot: 22, w0: -1.6, w1: 1.6, yTop: 0, yBot: -2.4, n: 14, surface: 'stair' });
+  B.wallZ('marbleWall', 22, -1.6, 1.6, -2.8, 3.0, -1);
+  B.tube({ p: [0, 2.94, 16.5], axis: 'z', len: 1.2, color: 0xd8e4f0, I: 3, range: 7 });
+  B.portal({ x0: -1.7, x1: 1.7, z0: 20.2, z1: 22.2, y0: -4, y1: 1 }, 'z6', 'fromZ7');
+  B.reverbArea({ x0: -1.7, x1: 1.7, z0: RA - 0.2, z1: 22.5, y0: -4, y1: 4 }, 'corridor');
+  // ---------- Puerta de emergencia → calle (zona 1) ----------
+  B.box('steel', -0.8, 0, -RA + 0.25, 0.8, 2.2, -RA + 0.32, { seg: 0.6 });
+  B.box('grey', -0.86, 2.2, -RA + 0.2, 0.86, 2.28, -RA + 0.36); B.cyl('metal', [-0.5, 1.0, -RA + 0.36], [0.5, 1.0, -RA + 0.36], 0.02, 6);
+  B.glowSign(Signs.exitSign(), [0, 2.55, -RA + 0.3], '+z', 0.56, 0.28, 1.4, { off: 0.01 });
+  B.door({ box: { x0: -0.85, x1: 0.85, y0: 0, y1: 2.2, z0: -RA + 0.1, z1: -RA + 0.45 }, to: 'z1', spawn: 'steelDoor', unlock: 'steel', pos: [0, 1, -RA + 0.4] });
+  // luces reales: luna cenital, verde de emergencia, cálida sobre la exposición
+  B.realDefs[0] = { p: [0, 12, 0], color: lin(0x9ab4ff), I: 70, range: 34, group: null, bake: { p: [0, 12, 0], color: lin(0x9ab4ff), I: 70, range: 34, dir: [0, -1, 0], dmin: 0.3 } };
+  B.realDefs[1] = { p: [0, 2.4, -RA + 0.9], color: lin(0x30ff90), I: 1.6, range: 6, group: null, bake: { p: [0, 2.4, -RA + 0.9], color: lin(0x30ff90), I: 1.6, range: 6, dir: [0, -0.3, 1], dmin: 0.2 } };
+  B.realDefs[2] = { p: [-9.5, 3.4, 0], color: lin(0xffd8a8), I: 6, range: 9, group: null, bake: { p: [-9.5, 3.4, 0], color: lin(0xffd8a8), I: 6, range: 9, dir: [-1, -0.5, 0], dmin: 0.3 } };
+  B.glow([0, 2.55, -RA + 0.45], [0.02, 0.1, 0.05], 0.8);
+  // ---------- Sonido ----------
+  B.emitter({ type: 'vent', pos: [0, HT - 1, 0], gain: 0.05, ref: 6 });
+  B.emitter({ type: 'wind', pos: [RA - 1, HW + 1, 0], gain: 0.025, ref: 4 });
+  B.emitter({ type: 'wind', pos: [-RA + 1, HW + 1, 3], gain: 0.02, ref: 4 });
+  B.emitter({ type: 'hum', pos: [0, 2.55, -RA + 0.5], gain: 0.02 });
+  B.emitter({ type: 'creak', pos: [6, 8, -6], gain: 0.15, min: 20, max: 45 });
+  B.emitter({ type: 'rumble', gain: 0.12, first: 40 });
+  B.emitter({ type: 'roomtone', gain: 0.05, f: 160 });
+  B.spawn('fromZ6', 0, 16.4, 0);
+  B.spawn('fromZ1', 0, -RA + 1.6, PI);
+  B.menuCam = null;
+  return B;
+}
+
+/* =====================================================================
    GESTOR DE ZONAS — solo la zona actual y las adyacentes viven en memoria
    ===================================================================== */
-// Grafo del recorrido (semilineal, con atajos que se abren desde el otro lado)
+// Grafo del recorrido (semilineal). [zona, atajo]: vecina solo si el atajo ya está abierto
 const ZONE_DEFS = {
-  z1: { build: buildZone1, adj: ['z2'] },
-  z2: { build: buildZone2, adj: ['z1', 'z3', 'z5'] },
-  z3: { build: buildZone3, adj: ['z2', 'z4'] },
+  z1: { build: buildZone1, adj: ['z2', ['z7', 'steel']] },
+  z2: { build: buildZone2, adj: ['z1', 'z3', ['z5', 'svcDoor']] },
+  z3: { build: buildZone3, adj: ['z2', 'z4', ['z6', 'arcade']] },
   z4: { build: buildZone4, adj: ['z3', 'z5'] },
-  z5: { build: buildZone5, adj: ['z4', 'z2'] },
+  z5: { build: buildZone5, adj: ['z4', 'z6', ['z2', 'svcDoor']] },
+  z6: { build: buildZone6, adj: ['z5', 'z7', ['z3', 'arcade']] },
+  z7: { build: buildZone7, adj: ['z6', ['z1', 'steel']] },
 };
+const adjOf = (id) => ZONE_DEFS[id].adj.filter((a) => typeof a === 'string' || Flags[a[1]]).map((a) => (typeof a === 'string' ? a : a[0])).filter((a) => ZONE_DEFS[a]);
 const Zones = {
   cache: new Map(), current: null,
   get(id) {
@@ -3187,7 +3764,7 @@ const Zones = {
   // en negro (carga inicial y fundidos) para que nunca haya tirones al caminar.
   prebuild() {
     if (!this.current) return;
-    for (const id of ZONE_DEFS[this.current.id].adj) {
+    for (const id of adjOf(this.current.id)) {
       if (!ZONE_DEFS[id] || this.cache.has(id)) continue;
       const z = this.get(id);
       try { World.renderer.compile(z.group, World.camera, World.scene); } catch (e) { /* opcional */ }
@@ -3195,7 +3772,7 @@ const Zones = {
   },
   // Libera (dispose) las zonas que no son la actual ni adyacentes
   prune() {
-    const keep = new Set([this.current.id, ...ZONE_DEFS[this.current.id].adj]);
+    const keep = new Set([this.current.id, ...adjOf(this.current.id)]);
     let freed = false;
     for (const [id, z] of this.cache) if (!keep.has(id)) { if (z.active) z.deactivate(); z.dispose(); this.cache.delete(id); freed = true; if (DEBUG) console.log('[zona] liberada', id); }
     if (freed) gcShared();
@@ -3235,7 +3812,7 @@ const Game = {
     this.show(null);
     await this.fadeTo(1, 0.6);
     const z = Zones.activate('z1', 'start'); z.startAudio();
-    AudioSys.resetReverb(); z.updateReverb(true);
+    AudioSys.resetReverb(); z.updateReverb(true); Music.sync('z1'); Silence.reset();
     Flashlight.on = false; Player.crouch = false; Player.eye = CONFIG.EYE_HEIGHT;
     this.state = 'playing'; this.started = true; this.armed = false;
     Input.requestLock();
@@ -3257,7 +3834,7 @@ const Game = {
     await this.fadeTo(1, 0.6);
     if (document.pointerLockElement) document.exitPointerLock();
     this.state = 'menu';
-    const z = Zones.activate('z1', null); z.stopAudio();
+    const z = Zones.activate('z1', null); z.stopAudio(); Music.zone = null; Music.sync();
     Flashlight.on = false;
     this.show('menu');
     await this.fadeTo(0, 1.2);
@@ -3273,7 +3850,7 @@ const Game = {
     await this.fadeTo(1, CONFIG.FADE_TIME);
     const z = Zones.activate(to, spawn);
     Zones.prebuild();
-    AudioSys.resetReverb(); z.updateReverb(true);
+    AudioSys.resetReverb(); z.updateReverb(true); Music.sync(to);
     this.armed = false;
     Post.render(this.time, 1);                 // calienta shaders/texturas con la pantalla en negro
     await nextFrame();
@@ -3364,7 +3941,7 @@ function menuCamera(t) {
 function frame() {
   requestAnimationFrame(frame);
   const dt = Math.min(clock.getDelta(), 0.066); Game.time += dt;
-  World.renderer.info.reset();
+  World.renderer.info.reset(); DynRes.update();
   const cam = World.camera, z = Zones.current;
   // fundido
   if (Game.fade !== Game.fadeTarget) {
@@ -3383,13 +3960,14 @@ function frame() {
     Flashlight.update(dt, cam, Game.time);
     z.update(dt, Game.time, cam);
     AudioSys.updateListener(cam);
+    Music.update(dt); Silence.update(dt);
   }
   Post.render(Game.time, Game.fade);
   if (DEBUG) {
     fpsN++; const now = performance.now();
     if (now - fpsT > 500) {
       const info = World.renderer.info.render;
-      $('fps').textContent = `${(fpsN * 1000 / (now - fpsT)).toFixed(0)} fps  calls ${info.calls}  tris ${info.triangles}\n${z ? z.id : ''} ${Player.surface} ${Player.pos.x.toFixed(1)},${Player.pos.y.toFixed(2)},${Player.pos.z.toFixed(1)}`;
+      $('fps').textContent = `${(fpsN * 1000 / (now - fpsT)).toFixed(0)} fps  res ${(Q.scale * DynRes.scale).toFixed(2)}  calls ${info.calls}  tris ${info.triangles}\n${z ? z.id : ''} ${Player.surface} ${Player.pos.x.toFixed(1)},${Player.pos.y.toFixed(2)},${Player.pos.z.toFixed(1)}`;
       fpsT = now; fpsN = 0;
     }
   }
@@ -3416,7 +3994,7 @@ async function boot() {
   window.__booted = true;
   Game.show('menu');
   Game.fadeTo(0, 2.0);
-  if (DEBUG) window.__game = { TEXT, Tex, TEX, Game, Zones, Player, AudioSys, World, Flashlight, S, Q: () => Q, CONFIG,
+  if (DEBUG) window.__game = { Flags, Music, TEXT, Tex, TEX, Game, Zones, Player, AudioSys, World, Flashlight, S, Q: () => Q, CONFIG,
     tp(id, spawn) { return Game.transition(id, spawn); },
     set(x, z, yaw = Player.yaw, pitch = 0) { const g = Zones.current.groundTop(x, z); Player.pos.set(x, g ? g.y : Player.pos.y, z); Player.camY = Player.pos.y + Player.eye; Player.yaw = yaw; Player.pitch = pitch; } };
   return z;
