@@ -106,7 +106,7 @@ class ZoneCtx {
       const mat = MDEF[matKey].mat(); if (mat.userData.key) this.matKeys.add(mat.userData.key);
       const im = new THREE.InstancedMesh(geo, mat, matrices.length), c = new THREE.Color(), v = new THREE.Vector3();
       matrices.forEach((m, i) => { im.setMatrixAt(i, m); v.setFromMatrixPosition(m); const b = baker.at([v.x, v.y + 0.45, v.z]); im.setColorAt(i, c.setRGB(b[0], b[1], b[2])); });
-      im.instanceColor.needsUpdate = true; im.computeBoundingSphere(); im.userData.cond = cond; this.group.add(im);
+      im.instanceColor.needsUpdate = true; im.computeBoundingSphere(); im.userData.cond = cond; im.castShadow = im.receiveShadow = true; this.group.add(im);
     });
   }
   // Bóveda de túnel (semicírculo en el plano z-y) a lo largo de x, con caras hacia dentro

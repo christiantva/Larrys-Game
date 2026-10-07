@@ -20,6 +20,9 @@ function initWorld() {
   // Linterna
   const flash = new THREE.SpotLight(0xfff0d8, 0, CONFIG.FLASH_RANGE, 0.42, 0.6, 2);
   const flashTarget = new THREE.Object3D(); flash.target = flashTarget; scene.add(flash, flashTarget);
+  // sombras de la linterna (solo en calidad alta; el mapa se actualiza solo con la linterna encendida)
+  r.shadowMap.type = THREE.PCFSoftShadowMap;
+  flash.shadow.mapSize.set(1024, 1024); flash.shadow.camera.near = 0.15; flash.shadow.camera.far = CONFIG.FLASH_RANGE; flash.shadow.bias = -0.0004; flash.shadow.normalBias = 0.03;
   Object.assign(World, { renderer: r, scene, camera: cam, lights, hemi, flash, flashTarget });
 }
 

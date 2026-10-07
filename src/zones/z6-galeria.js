@@ -157,6 +157,7 @@ function buildZone6() {
   B.door({ box: { x0: -22.1, x1: -21.8, y0: 0, y1: 2.0, z0: -0.5, z1: 0.5 }, to: 'z5', spawn: 'fromZ6', pos: [-21.9, 1, 0] });
   // ---------- Objetos, notas y sustos ----------
   B.note({ id: 'n6', p: [3.3, 0.475, -4.5] });
+  shoeProp(B, -4.0, 0, 0.3, 1.0); shoeProp(B, -3.7, 0, 0.5, 1.3); paperProp(B, -19.0, 0, -0.3, 0.7); canProp(B, 7.6, 0, -9.0);
   B.pickup({ id: 'bat6', item: 'battery', p: [8.3, 0.01, -7.4], build: (b) => batteryProp(b, 8.3, 0, -7.4, 2.6) });
   B.decal('hands', Signs.hands, [-13.0, 1.1, -1.12], '+z', 1.6, 1.6, { off: 0.07 });
   B.decal('grafA', () => Signs.graffiti('でられない'), [-5.5, 1.2, 1.2], '-z', 2.4, 0.6, { off: 0.07 });

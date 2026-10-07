@@ -21,6 +21,8 @@ const Scares = {
     const t = new THREE.CanvasTexture(silhouetteCanvas()); t.colorSpace = THREE.SRGBColorSpace;
     const m = new THREE.MeshLambertMaterial({ map: t, color: 0x2c2c30, alphaTest: 0.45, side: THREE.DoubleSide }); m.userData.shared = true;
     this.mesh = new THREE.Mesh(new THREE.PlaneGeometry(0.72, 1.8), m); this.mesh.visible = false; World.scene.add(this.mesh);
+    // con sombras activas, la silueta proyecta su forma con la linterna
+    this.mesh.castShadow = true; this.mesh.customDepthMaterial = new THREE.MeshDepthMaterial({ depthPacking: THREE.RGBADepthPacking, map: t, alphaTest: 0.45 });
   },
   reset(done) { this.done = done ? { ...done } : {}; this.clear(); },
   // Corta todo lo que esté en marcha (al cambiar de zona o salir al menú)

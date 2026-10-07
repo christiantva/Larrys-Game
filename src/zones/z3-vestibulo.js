@@ -189,6 +189,7 @@ function buildZone3() {
   B.tactile('dots', -5.35, -5.05, -0.15, 0.15, 0); B.tactile('bars', -5.35, -5.05, 0.15, Z1 + 1.5, 0, 'z');
   // ---------- Objetos, notas y sustos ----------
   B.note({ id: 'n3', p: [-1.0, 0.004, -6.95] });
+  bagProp(B, 1.3, 0, -3.0); shoeProp(B, 3.6, 0, 5.2, 2.2, 'woodBrown'); canProp(B, -11.6, 0, 6.8, false); paperProp(B, -7.2, 0, 5.8, 2.6);
   B.pickup({ id: 'bat3', item: 'battery', p: [-4.0, 0.01, 4.25], build: (b) => batteryProp(b, -4.0, 0, 4.25, 2.1) });
   B.decal('grime', Signs.grime, [13.2, 1.6, Z0], '+z', 3.0, 2.4);
   B.decal('tape', Signs.tape, [13.2, 1.2, Z0 + 0.05], '+z', 4.4, 0.12, { off: 0.03 });

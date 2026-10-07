@@ -136,6 +136,7 @@ function buildZone2() {
   B.pickup({ id: 'bat2', item: 'battery', p: [-0.95, Y1 + 0.01, -8.4], build: (b) => batteryProp(b, -0.95, Y1, -8.4, 1.2) });
   B.decal('tally', Signs.tally, [3.0, Y1 + 1.35, -10.2], '+z', 1.0, 0.5, { off: 0.02 });
   B.decal('grime', Signs.grime, [11.5, Y2 + 1.4, -10.2], '+z', 2.2, 2.2);
+  paperProp(B, 2.4, Y1, -8.0, 1.2); canProp(B, 12.3, Y2, -7.6);
   B.decal('crack', Signs.crack, [-W, ceilF1(-6) - 0.9, -6], '+x', 1.2, 1.2);
   B.decal('grafA', () => Signs.graffiti('でられない'), [6.7, Y1 + 0.2, -10.2], '+z', 2.4, 0.6);
   // pasos que bajan detrás de ti por el primer tramo

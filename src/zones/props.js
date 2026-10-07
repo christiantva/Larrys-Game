@@ -46,3 +46,27 @@ function punchProp(B, x, y, z) {
   B.box('metal', x - 0.07, y, z - 0.008, x + 0.04, y + 0.012, z + 0.008); B.box('metal', x - 0.07, y, z + 0.012, x + 0.04, y + 0.012, z + 0.028);
   B.box('dark', x + 0.03, y, z - 0.01, x + 0.07, y + 0.016, z + 0.03);
 }
+// ---- Objetos olvidados (vida pasada) ----
+function shoeProp(B, x, y, z, rot = 0, key = 'black') {
+  const m = new THREE.Matrix4().makeRotationY(rot).setPosition(x, y, z), T = (p) => new THREE.Vector3(...p).applyMatrix4(m).toArray();
+  const a = T([-0.13, 0, -0.045]), b = T([0.13, 0.05, 0.045]);
+  B.box(key, Math.min(a[0], b[0]), y, Math.min(a[2], b[2]), Math.max(a[0], b[0]), y + 0.05, Math.max(a[2], b[2]));
+  const h = T([-0.09, 0, 0]); B.box(key, h[0] - 0.045, y + 0.05, h[2] - 0.04, h[0] + 0.045, y + 0.11, h[2] + 0.04);
+}
+function bagProp(B, x, y, z) {
+  B.box('woodBrown', x - 0.17, y, z - 0.07, x + 0.17, y + 0.24, z + 0.07);
+  B.cyl('dark', [x - 0.1, y + 0.24, z], [x - 0.06, y + 0.36, z], 0.008, 4); B.cyl('dark', [x - 0.06, y + 0.36, z], [x + 0.06, y + 0.36, z], 0.008, 4); B.cyl('dark', [x + 0.06, y + 0.36, z], [x + 0.1, y + 0.24, z], 0.008, 4);
+}
+function canProp(B, x, y, z, lying = true) {
+  if (lying) B.cyl('red', [x - 0.06, y + 0.033, z], [x + 0.06, y + 0.033, z + 0.02], 0.033, 8, { caps: true });
+  else B.cyl('red', [x, y, z], [x, y + 0.12, z], 0.033, 8, { caps: true });
+}
+function paperProp(B, x, y, z, rot = 0) {
+  B.poster(Signs.newspaper, [x, y + 0.003, z], null, 0, 0, { key: 'news', quad: [[x - Math.cos(rot) * 0.28 - Math.sin(rot) * 0.2, y + 0.003, z + Math.sin(rot) * 0.28 - Math.cos(rot) * 0.2], [x + Math.cos(rot) * 0.28 - Math.sin(rot) * 0.2, y + 0.003, z - Math.sin(rot) * 0.28 - Math.cos(rot) * 0.2], [x + Math.cos(rot) * 0.28 + Math.sin(rot) * 0.2, y + 0.003, z - Math.sin(rot) * 0.28 + Math.cos(rot) * 0.2], [x - Math.cos(rot) * 0.28 + Math.sin(rot) * 0.2, y + 0.003, z + Math.sin(rot) * 0.28 + Math.cos(rot) * 0.2]], normal: [0, 1, 0] });
+}
+// Móvil olvidado con la pantalla encendida (0:42, 23 llamadas perdidas)
+function phoneProp(B, x, y, z, rot = 0) {
+  B.box('black', x - 0.04, y, z - 0.075, x + 0.04, y + 0.008, z + 0.075);
+  B.glowSign(Signs.phoneScreen, [x, y + 0.0085, z], '+y', 0.07, 0.135, 0.9, { key: 'phoneScr', off: 0 });
+  B.glow([x, y + 0.03, z], [0.05, 0.06, 0.08], 0.5);
+}

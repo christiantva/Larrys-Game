@@ -112,6 +112,7 @@ function buildZone4() {
     flag: 'maint', item: 'key', msg: 'Cerrada con llave. 関係者以外立入禁止 — solo personal.' });
   // ---------- Objetos, notas y sustos ----------
   B.note({ id: 'n4', p: [-12.25, 0.475, ZW + 0.33] });
+  phoneProp(B, 0.35, 0.47, ZW + 0.35); bagProp(B, -24.4, 0.47, ZW + 0.3); paperProp(B, 4.0, 0, -0.8, 0.4); shoeProp(B, -17.0, 0, 1.8, -0.4);
   B.pickup({ id: 'bat4', item: 'battery', p: [9.7, 0.01, ZW + 0.95], build: (b) => batteryProp(b, 9.7, 0, ZW + 0.95, 0.7) });
   B.decal('grime', Signs.grime, [-15, 1.6, ZW], '+z', 2.6, 2.6); B.decal('grime', Signs.grime, [14, 1.3, ZW], '+z', 2.0, 2.0);
   B.decal('crack', Signs.crack, [-26, 1.8, ZW], '+z', 1.6, 1.6);

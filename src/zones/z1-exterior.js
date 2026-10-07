@@ -234,6 +234,7 @@ function buildZone1() {
   }
   // ---------- Objetos, notas y eventos ----------
   B.note({ id: 'n1', p: [0.9, 0.004, 0.2] });
+  shoeProp(B, -3.6, 0, 1.9, 0.6); canProp(B, 8.4, 0, 0.8); paperProp(B, -6.6, 0, 1.2, 0.3);
   B.pickup({ id: 'bat1', item: 'battery', p: [6.27, 0.98, -2.72], build: (b) => batteryProp(b, 6.27, 0.97, -2.72, 0.4), msg: 'Pilas. Ahorra la linterna: sin luz, la estación se te mete en la cabeza.' });
   B.decal('grime', Signs.grime, [-1.0, 1.0, -5.8], '+z', 2.0, 2.0);
   for (const y of [0.75, 1.15]) B.decal('tape', Signs.tape, [-10.0, y, -3.05], '+z', 1.2, 0.08);   // callejón precintado

@@ -36,6 +36,12 @@ function applyQuality(rebuild) {
   const prev = Q; Q = QUALITY[S.quality] || QUALITY.medium;
   World.camera.far = Q.far; World.camera.updateProjectionMatrix();
   World.lights.forEach((L, i) => { L.visible = i < Q.realLights; });
+  const sh = !!Q.shadows;
+  if (World.renderer.shadowMap.enabled !== sh) {          // cambiar las sombras obliga a recompilar los materiales
+    World.renderer.shadowMap.enabled = sh; World.flash.castShadow = sh;
+    for (const m of Object.values(MATS)) m.needsUpdate = true;
+    World.scene.traverse((o) => { if (o.material) o.material.needsUpdate = true; });
+  }
   Post.resize();
   if (rebuild && prev !== Q && Zones.current) {
     const wasAudio = Zones.current.emitters.length > 0;

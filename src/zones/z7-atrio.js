@@ -113,6 +113,7 @@ function buildZone7() {
   B.emitter({ type: 'rumble', gain: 0.12, first: 40 });
   B.emitter({ type: 'roomtone', gain: 0.05, f: 160 });
   // ---------- Objetos y sustos ----------
+  bagProp(B, -6.1, 0.49, -1.6); shoeProp(B, 5.0, 0, 6.0, 0.8);
   B.pickup({ id: 'bat7', item: 'battery', p: [-5.15, 0.5, 0.8], build: (b) => batteryProp(b, -5.15, 0.49, 0.8, 0.3) });
   B.decal('grime', Signs.grime, [0, 1.6, -RA + 0.32], '+z', 3.0, 3.0, { off: 0.01 });
   B.decal('crack', Signs.crack, [4, 0.004, 4], '+y', 2.2, 2.2);

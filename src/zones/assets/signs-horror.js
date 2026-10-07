@@ -110,3 +110,17 @@ Object.assign(Signs, {
     }
   }),
 });
+Object.assign(Signs, {
+  newspaper: () => signCanvas(512, 360, (g, w, h) => {
+    g.fillStyle = '#d6d2c6'; g.fillRect(0, 0, w, h); txt(g, '京都新聞', 20, 34, 40, '#1a1a1a', { weight: '900' });
+    txt(g, '終電 車両 行方不明', 20, 92, 34, '#1a1a1a', { weight: '900' }); g.fillStyle = '#555'; g.fillRect(20, 120, 200, 130);
+    fineLines(g, 240, 120, 250, 220, 16, 'rgba(30,30,30,0.6)', 3); fineLines(g, 20, 266, 200, 80, 7, 'rgba(30,30,30,0.6)', 8);
+    g.fillStyle = 'rgba(80,60,30,0.25)'; g.beginPath(); g.arc(380, 300, 40, 0, PI * 2); g.fill();
+  }),
+  phoneScreen: () => signCanvas(128, 256, (g, w, h) => {
+    const gr = g.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, '#1a2a4a'); gr.addColorStop(1, '#0a1020'); g.fillStyle = gr; g.fillRect(0, 0, w, h);
+    txt(g, '0:42', w / 2, 70, 38, '#e8eef8', { font: EN, align: 'center', weight: '300' });
+    g.fillStyle = 'rgba(255,255,255,0.12)'; g.fillRect(10, 130, w - 20, 40); txt(g, '不在着信 23件', w / 2, 150, 13, '#fff', { align: 'center' });
+    g.fillRect(10, 176, w - 20, 34); txt(g, 'お母さん', w / 2, 193, 13, '#fff', { align: 'center' });
+  }),
+});

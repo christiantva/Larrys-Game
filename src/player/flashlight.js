@@ -40,5 +40,6 @@ const Flashlight = {
     L.position.copy(cam.position).add(off);
     World.flashTarget.position.copy(L.position).add(this.dir);
     L.intensity = CONFIG.FLASH_INTENSITY * this.level * this.flick * weak * (0.97 + Math.sin(time * 31) * 0.015);
+    L.shadow.autoUpdate = L.castShadow && this.level > 0.01;
   },
 };

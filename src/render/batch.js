@@ -108,6 +108,7 @@ class Batch {
     g.computeBoundingSphere();
     const mesh = new THREE.Mesh(g, this.mat);
     mesh.matrixAutoUpdate = false; mesh.renderOrder = this.order; mesh.userData.cond = this.cond || null;
+    mesh.castShadow = mesh.receiveShadow = !(this.mat && this.mat.transparent);   // solo cuenta si la calidad activa las sombras
     this.p = this.n = this.uv = this.ao = this.ix = null;
     return mesh;
   }
