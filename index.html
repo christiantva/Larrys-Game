@@ -2,7 +2,11 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#000000">
 <title>終電後 — after the last train</title>
 <style>
   :root { --fg: #d9dee2; --dim: #7c858b; --line: rgba(217, 222, 226, 0.14); }
@@ -49,8 +53,52 @@
     z-index: 11; cursor: pointer; padding: 14px 24px; background: rgba(0,0,0,.5); }
   #fatal { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); max-width: 520px; z-index: 30; font-size: 13px;
     line-height: 1.7; color: #e6c9c9; background: rgba(20, 0, 0, .85); padding: 22px 26px; letter-spacing: .04em; }
-  #fps { position: fixed; right: 10px; top: 8px; z-index: 20; font: 11px monospace; color: #8f8; white-space: pre; }
-  @media (max-width: 900px) { .opts { grid-template-columns: 1fr; gap: 10px; } }
+  #fps { position: fixed; left: 10px; bottom: 8px; z-index: 20; font: 11px monospace; color: #8f8; white-space: pre; pointer-events: none; }
+  @media (max-width: 640px) { .opts { grid-template-columns: 1fr; gap: 10px; } }
+  /* ---------- Móvil / táctil ---------- */
+  html, body { touch-action: none; overscroll-behavior: none; -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none; }
+  #options { overflow-y: auto; touch-action: pan-y; }
+  .foot .mob { display: none; } body.touch .foot .mob { display: inline; } body.touch .foot .desk { display: none; }
+  #touch { position: fixed; inset: 0; z-index: 4; touch-action: none; }
+  #joy { position: absolute; width: 124px; height: 124px; margin: -62px 0 0 -62px; border-radius: 50%; pointer-events: none;
+    border: 1px solid rgba(217,222,226,.22); background: radial-gradient(circle, rgba(217,222,226,.07), rgba(217,222,226,.02)); opacity: .35; transition: opacity .2s; }
+  #joy.on { opacity: 1; transition: none; }
+  #knob { position: absolute; left: 50%; top: 50%; width: 48px; height: 48px; margin: -24px 0 0 -24px; border-radius: 50%; background: rgba(217,222,226,.26); border: 1px solid rgba(217,222,226,.35); }
+  .tb { position: absolute; width: 54px; height: 54px; border-radius: 50%; border: 1px solid rgba(217,222,226,.28); background: rgba(8,10,12,.35);
+    color: var(--fg); display: grid; place-items: center; padding: 0; opacity: .5; touch-action: none; transition: opacity .15s, background .15s; }
+  .tb svg { width: 24px; height: 24px; stroke: currentColor; fill: none; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; pointer-events: none; }
+  .tb.on { opacity: .95; background: rgba(217,222,226,.2); }
+  .tb.big { width: 72px; height: 72px; } .tb.big svg { width: 30px; height: 30px; }
+  .tb.ready { opacity: 1; border-color: rgba(240,244,248,.9); box-shadow: 0 0 20px rgba(220,230,240,.28); }
+  #tbUse { right: calc(26px + env(safe-area-inset-right)); bottom: calc(30px + env(safe-area-inset-bottom)); }
+  #tbFlash { right: calc(114px + env(safe-area-inset-right)); bottom: calc(24px + env(safe-area-inset-bottom)); }
+  #tbCrouch { right: calc(30px + env(safe-area-inset-right)); bottom: calc(118px + env(safe-area-inset-bottom)); }
+  #tbRun { right: calc(104px + env(safe-area-inset-right)); bottom: calc(96px + env(safe-area-inset-bottom)); }
+  #tbPause { right: calc(14px + env(safe-area-inset-right)); top: calc(12px + env(safe-area-inset-top)); width: 42px; height: 42px; }
+  #rotate { position: fixed; left: 50%; top: calc(64px + env(safe-area-inset-top)); transform: translateX(-50%); z-index: 12; font-size: 11px; letter-spacing: .2em;
+    color: var(--dim); background: rgba(0,0,0,.55); padding: 8px 14px; pointer-events: none; white-space: nowrap; }
+  @media (pointer: coarse) {
+    button.m { font-size: 17px; padding: 11px 0; }
+    input[type=range] { width: 120px; height: 4px; }
+    input[type=range]::-webkit-slider-thumb { width: 22px; height: 22px; }
+    input[type=range]::-moz-range-thumb { width: 22px; height: 22px; }
+    input[type=checkbox] { width: 20px; height: 20px; }
+    .opts label, .opts .row { grid-template-columns: 1fr 120px 34px; }
+    .opts label.chk { grid-template-columns: 1fr 22px; }
+    .seg button { padding: 9px 0; font-size: 12px; }
+  }
+  @media (max-height: 560px) {
+    .title { margin-bottom: 16px; } .title.sm { margin-bottom: 10px; }
+    #options { justify-content: flex-start; padding-top: calc(14px + env(safe-area-inset-top)); padding-bottom: 14px; }
+    .opts { gap: 20px; margin-bottom: 8px; } .opts h3 { margin-bottom: 6px; } .opts label, .opts .row { margin: 5px 0; }
+    .foot { bottom: 2.5vh; line-height: 1.6; }
+  }
+  @media (max-height: 560px) and (min-width: 641px) {
+    .opts { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px; width: calc(100vw - 7vw - 28px - env(safe-area-inset-right)); }
+    .opts label, .opts .row { grid-template-columns: 1fr 92px 30px; font-size: 11px; gap: 6px; }
+    .opts label.chk { grid-template-columns: 1fr 22px; }
+    input[type=range] { width: 92px; }
+  }
 </style>
 <!-- Three.js desde CDN con versión fijada. Necesita internet la primera vez que se abre. -->
 <script type="importmap">
@@ -78,7 +126,7 @@
   <div class="title">終電後<small>after the last train</small></div>
   <button class="m" data-act="start">Iniciar</button>
   <button class="m" data-act="options">Opciones</button>
-  <div class="foot">usa auriculares<br>WASD + ratón · Shift correr · C agacharse · F linterna · E interactuar · Esc pausa</div>
+  <div class="foot">usa auriculares<br><span class="desk">WASD + ratón · Shift correr · C agacharse · F linterna · E interactuar · Esc pausa</span><span class="mob">joystick a la izquierda para caminar · arrastra a la derecha para mirar · toca lo que veas para interactuar</span></div>
 </div>
 
 <div id="pause" class="screen hidden">
@@ -117,6 +165,16 @@
 </div>
 
 <div id="dot"></div>
+<!-- Controles táctiles (solo en móvil) -->
+<div id="touch" class="hidden">
+  <div id="joy"><div id="knob"></div></div>
+  <button class="tb" id="tbPause" aria-label="Pausa"><svg viewBox="0 0 24 24"><path d="M9 6v12M15 6v12"/></svg></button>
+  <button class="tb" id="tbRun" aria-label="Correr"><svg viewBox="0 0 24 24"><path d="M6 7l5 5-5 5M13 7l5 5-5 5"/></svg></button>
+  <button class="tb" id="tbCrouch" aria-label="Agacharse"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6M6 18h12"/></svg></button>
+  <button class="tb" id="tbFlash" aria-label="Linterna"><svg viewBox="0 0 24 24"><path d="M8 4h8l-1 6H9z"/><path d="M9 10h6v10H9z"/><path d="M12 13v3"/></svg></button>
+  <button class="tb big" id="tbUse" aria-label="Interactuar"><svg viewBox="0 0 24 24"><path d="M9 11V5.5a1.5 1.5 0 0 1 3 0V11"/><path d="M12 10.5V4.5a1.5 1.5 0 0 1 3 0v6"/><path d="M15 10.5V6.5a1.5 1.5 0 0 1 3 0V14a6 6 0 0 1-6 6h-.5a6 6 0 0 1-5-2.7L4 13.5a1.5 1.5 0 0 1 2.4-1.8L9 14V11"/></svg></button>
+</div>
+<div id="rotate" class="hidden">gira el teléfono · mejor en horizontal</div>
 <div id="resume" class="hidden">clic para continuar</div>
 <div id="fatal" class="hidden"></div>
 <div id="fps" class="hidden"></div>
@@ -137,6 +195,8 @@ const CONFIG = {
   CROUCH_EYE: 1.0,         // altura de los ojos agachado
   PLAYER_RADIUS: 0.28,
   MOUSE_SENS: 0.0022,      // radianes por píxel (se multiplica por la sensibilidad del menú)
+  TOUCH_LOOK: 1.7,         // multiplicador al mirar arrastrando el dedo (móvil)
+  MIN_HFOV: 62,            // campo de visión horizontal mínimo (pantallas verticales)
   HEADBOB: 0.026,          // amplitud vertical del balanceo de cámara
   STEP_WALK: 0.74,         // metros por paso caminando
   STEP_RUN: 1.05,          // metros por paso corriendo
@@ -2019,7 +2079,7 @@ const Post = {
     const ext = World.renderer.extensions, canFloat = ext.has('EXT_color_buffer_float') || ext.has('EXT_color_buffer_half_float');
     this.rt = new THREE.WebGLRenderTarget(w, h, { type: canFloat ? THREE.HalfFloatType : THREE.UnsignedByteType, samples: Q.samples, depthBuffer: true, stencilBuffer: false });
     this.mat.uniforms.tDiffuse.value = this.rt.texture; this.mat.uniforms.uRes.value.set(w, h); this.w = w; this.h = h;
-    GlowMat.uniforms.uScale.value = h / (2 * Math.tan(THREE.MathUtils.degToRad(CONFIG.FOV) / 2));
+    GlowMat.uniforms.uScale.value = h / (2 * Math.tan(THREE.MathUtils.degToRad(World.camera.fov) / 2));
   },
   render(t, fade) {
     const u = this.mat.uniforms; u.uTime.value = t; u.uFade.value = fade; u.uExp.value = CONFIG.EXPOSURE * S.brightness; u.uCA.value = Q.ca ? CONFIG.CHROMATIC : 0;
@@ -2051,6 +2111,7 @@ const Input = {
   keys: new Set(), locked: false, lockTime: 0,
   down(code) { return this.keys.has(code); },
   requestLock() {
+    if (Touch.enabled) return;
     const el = World.renderer.domElement;
     try { const p = el.requestPointerLock(); if (p && p.catch) p.catch(() => onLockError()); } catch (e) { onLockError(); }
   },
@@ -2086,6 +2147,87 @@ function initInput() {
 function onLockError() {
   if (DEBUG) return; // en pruebas automáticas se juega sin bloquear el ratón
   if (Game.state === 'playing') document.getElementById('resume').classList.remove('hidden');
+}
+
+/* =====================================================================
+   CONTROLES TÁCTILES — joystick flotante (izquierda), arrastrar para mirar
+   (derecha), toque corto = interactuar, y botones de correr/agacharse/linterna
+   ===================================================================== */
+const IS_TOUCH = /[?&]touch/.test(location.search) || (!/[?&]desk/.test(location.search) && matchMedia('(hover: none) and (pointer: coarse)').matches);
+const Touch = {
+  enabled: IS_TOUCH, run: false, ax: 0, ay: 0, joy: null, look: null, state: {},
+  init() {
+    if (!this.enabled) return;
+    document.body.classList.add('touch');
+    const L = (this.el = $('touch')), joy = $('joy'), knob = $('knob'), R = 58;
+    const place = (x, y) => { joy.style.left = x + 'px'; joy.style.top = y + 'px'; };
+    this.resetJoy = () => { place(Math.max(90, innerWidth * 0.15), innerHeight - Math.max(95, innerHeight * 0.26)); joy.classList.remove('on'); knob.style.transform = ''; this.ax = this.ay = 0; };
+    L.addEventListener('pointerdown', (e) => {
+      if (Game.state !== 'playing') return;
+      e.preventDefault();
+      if (e.clientX < innerWidth * 0.42 && !this.joy) { this.joy = { id: e.pointerId, x0: e.clientX, y0: e.clientY }; place(e.clientX, e.clientY); joy.classList.add('on'); }
+      else if (!this.look) this.look = { id: e.pointerId, x: e.clientX, y: e.clientY, x0: e.clientX, y0: e.clientY, t0: performance.now() };
+    });
+    L.addEventListener('pointermove', (e) => {
+      if (this.joy && e.pointerId === this.joy.id) {
+        let dx = e.clientX - this.joy.x0, dy = e.clientY - this.joy.y0; const d = Math.hypot(dx, dy);
+        if (d > R) { // la base sigue al dedo si se aleja demasiado
+          const k = (d - R) / d; this.joy.x0 += dx * k; this.joy.y0 += dy * k; place(this.joy.x0, this.joy.y0); dx *= R / d; dy *= R / d;
+        }
+        knob.style.transform = `translate(${dx}px, ${dy}px)`;
+        const m = Math.min(1, Math.hypot(dx, dy) / R), k = m < 0.14 ? 0 : (m - 0.14) / 0.86, dd = Math.hypot(dx, dy) || 1;
+        this.ax = (dx / dd) * k; this.ay = (dy / dd) * k;
+      } else if (this.look && e.pointerId === this.look.id) {
+        const dx = e.clientX - this.look.x, dy = e.clientY - this.look.y; this.look.x = e.clientX; this.look.y = e.clientY;
+        Player.look(dx * CONFIG.TOUCH_LOOK, dy * CONFIG.TOUCH_LOOK);
+      }
+    });
+    const end = (e) => {
+      if (this.joy && e.pointerId === this.joy.id) { this.joy = null; this.resetJoy(); }
+      else if (this.look && e.pointerId === this.look.id) {
+        const lk = this.look; this.look = null;
+        // toque corto sin arrastrar: interactuar con lo que hay delante (puertas, botones...)
+        if (e.type === 'pointerup' && performance.now() - lk.t0 < 300 && Math.hypot(e.clientX - lk.x0, e.clientY - lk.y0) < 14) Game.interact();
+      }
+    };
+    L.addEventListener('pointerup', end); L.addEventListener('pointercancel', end);
+    const btn = (id, fn) => $(id).addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); if (Game.state === 'playing') fn(); });
+    btn('tbUse', () => Game.interact());
+    btn('tbFlash', () => Flashlight.toggle());
+    btn('tbCrouch', () => Player.toggleCrouch());
+    btn('tbRun', () => { this.run = !this.run; });
+    btn('tbPause', () => Game.pause());
+    this.resetJoy();
+    addEventListener('resize', () => { this.resetJoy(); });
+  },
+  show(on) {
+    if (!this.enabled) return;
+    this.el.classList.toggle('hidden', !on);
+    this.joy = this.look = null; this.resetJoy();
+  },
+  // Estado visual de los botones (solo se toca el DOM si algo cambió)
+  update() {
+    if (!this.enabled || Game.state !== 'playing') return;
+    const st = { tbUse: !!Game.target, tbFlash: Flashlight.on, tbCrouch: Player.crouch, tbRun: this.run };
+    for (const k in st) if (this.state[k] !== st[k]) { this.state[k] = st[k]; $(k).classList.toggle(k === 'tbUse' ? 'ready' : 'on', st[k]); }
+  },
+};
+// Pantalla completa + horizontal (Android). En iPhone no existe y se ignora.
+function enterFullscreen() {
+  const d = document.documentElement, rf = d.requestFullscreen || d.webkitRequestFullscreen;
+  if (!Touch.enabled || !rf || document.fullscreenElement || document.webkitFullscreenElement) return;
+  try {
+    const p = rf.call(d, { navigationUI: 'hide' });
+    const lock = () => { try { const o = screen.orientation; if (o && o.lock) o.lock('landscape').catch(() => {}); } catch (e) { /* no soportado */ } };
+    if (p && p.then) p.then(lock).catch(() => {}); else lock();
+  } catch (e) { /* no soportado */ }
+}
+// En vertical se abre el campo de visión para no ver "por un tubo"
+function fitCamera() {
+  const cam = World.camera, a = innerWidth / innerHeight;
+  const need = THREE.MathUtils.radToDeg(2 * Math.atan(Math.tan(THREE.MathUtils.degToRad(CONFIG.MIN_HFOV) / 2) / a));
+  cam.fov = clamp(Math.max(CONFIG.FOV, need), CONFIG.FOV, 100); cam.aspect = a; cam.updateProjectionMatrix();
+  $('rotate').classList.toggle('hidden', !(Touch.enabled && a < 1));
 }
 
 /* =====================================================================
@@ -2127,11 +2269,14 @@ const Player = {
     if (Input.down('KeyS') || Input.down('ArrowDown')) f -= 1;
     if (Input.down('KeyD') || Input.down('ArrowRight')) s += 1;
     if (Input.down('KeyA') || Input.down('ArrowLeft')) s -= 1;
-    const running = (Input.down('ShiftLeft') || Input.down('ShiftRight')) && !this.crouch && f > 0;
+    let mag = 1;
+    if (Touch.ax || Touch.ay) { f = -Touch.ay; s = Touch.ax; mag = Math.min(1, Math.hypot(f, s)); }   // joystick analógico
+    const running = (Input.down('ShiftLeft') || Input.down('ShiftRight') || (Touch.run && mag > 0.5)) && !this.crouch && f > 0.2;
     const sy = Math.sin(this.yaw), cy = Math.cos(this.yaw);
     let wx = -sy * f + cy * s, wz = -cy * f - sy * s; const wl = Math.hypot(wx, wz); if (wl > 0) { wx /= wl; wz /= wl; }
     let speed = this.crouch ? CONFIG.CROUCH_SPEED : running ? CONFIG.RUN_SPEED : CONFIG.WALK_SPEED;
     if (this.stair) speed *= CONFIG.STAIR_SPEED;
+    speed *= mag;
     const a = 1 - Math.exp(-(wl > 0 ? 9 : 11) * dt);
     this.vel.x += (wx * speed - this.vel.x) * a; this.vel.z += (wz * speed - this.vel.z) * a;
     // --- mover con deslizamiento contra paredes ---
@@ -3808,28 +3953,29 @@ const Game = {
   show(id) { for (const s of ['menu', 'pause', 'options', 'loading']) $(s).classList.toggle('hidden', s !== id); },
   async start() {
     if (this.busy) return; this.busy = true;
-    AudioSys.init(); applyAudioQuality();
+    AudioSys.init(); applyAudioQuality(); enterFullscreen();
     this.show(null);
     await this.fadeTo(1, 0.6);
     const z = Zones.activate('z1', 'start'); z.startAudio();
     AudioSys.resetReverb(); z.updateReverb(true); Music.sync('z1'); Silence.reset();
     Flashlight.on = false; Player.crouch = false; Player.eye = CONFIG.EYE_HEIGHT;
     this.state = 'playing'; this.started = true; this.armed = false;
-    Input.requestLock();
+    Input.requestLock(); Touch.show(true);
     AudioSys.setWorld(1, 0.8);
     await this.fadeTo(0, 1.6);
     this.busy = false;
   },
   pause() {
     if (this.state !== 'playing') return;
-    this.state = 'paused'; Input.keys.clear(); this.show('pause'); $('resume').classList.add('hidden');
+    this.state = 'paused'; Input.keys.clear(); this.show('pause'); $('resume').classList.add('hidden'); Touch.show(false);
     AudioSys.setWorld(0.25, 0.25); $('dot').classList.remove('on');
   },
   resume() {
     this.state = 'playing'; this.show(null); AudioSys.setWorld(1, 0.3); Input.requestLock();
+    if (Touch.enabled) { enterFullscreen(); Touch.show(true); if (AudioSys.ctx && AudioSys.ctx.state !== 'running') AudioSys.ctx.resume(); }
   },
   async quit() {
-    if (this.busy) return; this.busy = true; this.show(null);
+    if (this.busy) return; this.busy = true; this.show(null); Touch.show(false);
     AudioSys.setWorld(0, 0.3);
     await this.fadeTo(1, 0.6);
     if (document.pointerLockElement) document.exitPointerLock();
@@ -3960,7 +4106,7 @@ function frame() {
     Flashlight.update(dt, cam, Game.time);
     z.update(dt, Game.time, cam);
     AudioSys.updateListener(cam);
-    Music.update(dt); Silence.update(dt);
+    Music.update(dt); Silence.update(dt); Touch.update();
   }
   Post.render(Game.time, Game.fade);
   if (DEBUG) {
@@ -3974,16 +4120,18 @@ function frame() {
 }
 addEventListener('resize', () => {
   World.renderer.setSize(innerWidth, innerHeight);
-  World.camera.aspect = innerWidth / innerHeight; World.camera.updateProjectionMatrix();
+  fitCamera();
   Post.resize();
 });
+// Si la app pasa a segundo plano (cambio de pestaña, llamada...), se pausa
+document.addEventListener('visibilitychange', () => { if (document.hidden && Game.state === 'playing') Game.pause(); });
 
 /* =====================================================================
    ARRANQUE
    ===================================================================== */
 async function boot() {
   loadSettings(); Q = QUALITY[S.quality];
-  initWorld(); Post.init(); applyQuality(false); initInput(); bindUI(); syncOptionsUI();
+  initWorld(); fitCamera(); Post.init(); applyQuality(false); initInput(); Touch.init(); bindUI(); syncOptionsUI();
   if (DEBUG) $('fps').classList.remove('hidden');
   await nextFrame(); await nextFrame();
   const z = Zones.activate('z1', 'start');
