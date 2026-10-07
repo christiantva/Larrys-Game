@@ -121,8 +121,9 @@ class ZoneCtx {
   }
   // Puerta: con E cambia de zona. flag = atajo requerido; unlock = atajo que desbloquea al usarla
   // item = objeto que la abre (se gasta y activa 'flag'); msg = texto si sigue cerrada
-  door({ box, to, spawn, flag = null, unlock = null, pos, kind = 'door', item = null, msg = null, label = 'Abrir' }) {
+  door({ box, to, spawn, flag = null, unlock = null, pos, kind = 'door', item = null, msg = null, label = 'Abrir', lock = null }) {
     this.interact(box, () => {
+      const lm = lock && lock(); if (lm) { AudioSys.doorRattle(pos); Hud.msg(lm); return; }
       if (flag && !Flags[flag] && item && Inv.has(item)) { Inv.take(item); setFlag(flag); Hud.msg('Usas: ' + ITEMS[item].name); AudioSys.unlock(pos); }
       if ((flag && !Flags[flag]) || !ZONE_DEFS[to]) { if (kind === 'shutter') AudioSys.shutterRattle(pos); else AudioSys.doorRattle(pos); if (msg) Hud.msg(msg); return; }
       if (unlock) setFlag(unlock);

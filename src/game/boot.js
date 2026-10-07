@@ -15,7 +15,7 @@ async function boot() {
   window.__booted = true;
   Game.show('menu');
   Game.fadeTo(0, 2.0);
-  if (DEBUG) window.__game = { Flags, Music, TEXT, Tex, TEX, Game, Zones, Player, AudioSys, World, Flashlight, S, Q: () => Q, CONFIG,
+  if (DEBUG) window.__game = { StairLoop, Flags, Music, TEXT, Tex, TEX, Game, Zones, Player, AudioSys, World, Flashlight, S, Q: () => Q, CONFIG,
     Inv, Notes, Sanity, Scares, Save, Ending, Keypad, Inventory, Hud, Power, setFlag,
     tp(id, spawn) { return Game.transition(id, spawn); },
     act(label, n = 0) { const l = Zones.current.inter.filter((i) => condOk(i.cond) && (typeof i.label === 'function' ? i.label() : i.label) === label); if (l[n]) { l[n].action(); return true; } return false; },

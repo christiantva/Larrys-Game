@@ -59,13 +59,16 @@ function buildZone2() {
   B.tactile('dots', 9.7, 10.0, -10.2, -7.2, Y2);
   B.tactile('bars', -0.15, 0.15, -10.2, -7.8, Y1, 'z'); B.tactile('bars', 0.15, 3.4, -8.85, -8.55, Y1, 'x');
   // ---------- Puerta cerrada al fondo del rellano ----------
-  B.box('white', -0.5, Y1, -10.2, 0.5, Y1 + 2.05, -10.165, { seg: 0.6 });
+  B.when('an_door', false, () => B.box('white', -0.5, Y1, -10.2, 0.5, Y1 + 2.05, -10.165, { seg: 0.6 }));
+  B.when('an_door', true, () => { B.box('white', 0.46, Y1, -10.2, 0.5, Y1 + 2.05, -9.2, { seg: 0.6 }); B.emissiveBox(0x000000, 0, -0.5, Y1, -10.19, 0.46, Y1 + 2.05, -10.18); });
   B.box('grey', -0.56, Y1 + 2.05, -10.2, 0.56, Y1 + 2.11, -10.15); B.box('grey', -0.56, Y1, -10.2, -0.5, Y1 + 2.05, -10.15); B.box('grey', 0.5, Y1, -10.2, 0.56, Y1 + 2.05, -10.15);
   B.cyl('metal', [0.36, Y1 + 1.0, -10.16], [0.36, Y1 + 1.0, -10.1], 0.02, 6, { caps: true }); B.cyl('metal', [0.36, Y1 + 1.0, -10.1], [0.22, Y1 + 1.0, -10.1], 0.016, 6, { caps: true });
   B.poster(Signs.staffOnly(), [0, Y1 + 1.55, -10.16], '+z', 0.56, 0.14, { off: 0.003 });
   // puerta de servicio: atajo hacia el túnel en obras (se desbloquea desde el otro lado)
-  B.door({ box: { x0: -0.5, x1: 0.5, y0: Y1, y1: Y1 + 2.05, z0: -10.25, z1: -10.1 }, to: 'z5', spawn: 'fromZ2', flag: 'svcDoor', pos: [0, Y1 + 1.0, -10.1], msg: 'Solo personal. Cerrada desde el otro lado.' });
-  B.glowSign(Signs.exitSign(), [0, Y1 + 2.35, -10.16], '+z', 0.5, 0.25, 1.4);
+  B.door({ box: { x0: -0.5, x1: 0.5, y0: Y1, y1: Y1 + 2.05, z0: -10.25, z1: -10.1 }, to: 'z5', spawn: 'fromZ2', flag: 'svcDoor', pos: [0, Y1 + 1.0, -10.1], msg: 'Solo personal. Cerrada desde el otro lado.',
+    lock: () => (StairLoop.active() ? 'No cede. Al otro lado alguien respira.' : null) });
+  B.when('an_exit', false, () => B.glowSign(Signs.exitSign(), [0, Y1 + 2.35, -10.16], '+z', 0.5, 0.25, 1.4));
+  B.when('an_exit', true, () => B.glowSign(Signs.exitSignRed(), [0, Y1 + 2.35, -10.16], '+z', 0.5, 0.25, 1.6, { key: 'exitRed' }));
   B.bake({ p: [0, Y1 + 2.3, -10.0], color: lin(0x2aff8a), I: 0.22, range: 3, dir: [0, 0, 1], dmin: 0.1, bounce: 0.02 });
   B.glow([0, Y1 + 2.35, -10.05], [0.02, 0.12, 0.05], 0.8);
   // ---------- Carteles y detalles de "vida pasada" ----------
@@ -80,7 +83,8 @@ function buildZone2() {
     // paraguas olvidados que antes no estaban
     for (let k = 0; k < 4; k++) { const x = 1.6 + k * 0.5; B.cyl('dark', [x, Y1 + 0.02, -10.1], [x + 0.05, Y1 + 0.86, -10.0], 0.009, 5); B.cyl('umbrella', [x + 0.005, Y1 + 0.18, -10.1], [x + 0.045, Y1 + 0.82, -10.02], 0.016, 10, { r2: 0.075 }); }
   });
-  B.poster(Signs.notice(21, 'お願い'), [W, 1.5, 1.4], '-x', 0.32, 0.45);
+  B.when('act2', false, () => B.poster(Signs.notice(21, 'お願い'), [W, 1.5, 1.4], '-x', 0.32, 0.45));
+  B.when('act2', true, () => B.glowSign(Signs.loopRules(), [W - 0.01, 1.55, 1.2], '-x', 0.9, 1.1, 0.9));
   for (const [z, r] of [[-2.4, 0], [-4.9, 0], [-3.6, 1]]) { const y = stairF1(z) + 1.55, x0 = r ? W - 0.015 : -W, x1 = r ? W : -W + 0.015; B.box('metal', x0, y - 0.45, z - 0.33, x1, y + 0.45, z + 0.33, { skip: [r ? 'px' : 'nx'] }); }
   B.glowSign(Signs.gates(), [2.4, Y1 + 2.1, -10.17], '+z', 1.6, 0.4, 1.1);
   B.box('red', -W, Y1 + 0.75, -9.55, -W + 0.18, Y1 + 1.35, -9.15); B.poster(Signs.extinguisher(), [-W + 0.18, Y1 + 1.05, -9.35], '+x', 0.36, 0.56, { off: 0.003 });
@@ -144,6 +148,22 @@ function buildZone2() {
   // el tubo averiado del segundo tramo revienta al pasar
   B.trigger({ x0: 6.2, x1: 7.6, z0: -10.2, z1: -7.2 }, (z) => Scares.lampBurst(z, 'f2', [5.6, ceilF2(5.6) - 0.3, -7.3]), { id: 'z2pop' });
   B.when('act2', true, () => B.trigger({ x0: -W, x1: 3.0, z0: -9.0, z1: -7.6 }, () => Scares.slam([0, Y1 + 1.0, -10.1]), { id: 'z2slam' }));
+  // ---------- 2º acto: escalera infinita ----------
+  B.when('act2', true, () => {
+    B.trigger({ x0: -W, x1: W, z0: 1.45, z1: 2.4, y0: -0.5, y1: 0.5 }, () => StairLoop.start());
+    B.trigger({ x0: -W, x1: 4.0, z0: -10.2, z1: -7.4, y0: Y1 - 0.5, y1: Y1 + 0.5 }, () => StairLoop.visit());
+    B.trigger({ x0: -W, x1: W, z0: 0.2, z1: 1.4, y0: -0.5, y1: 0.5 }, () => StairLoop.back());
+    B.trigger({ x0: 9.7, x1: 10.6, z0: -10.2, z1: -7.2 }, () => StairLoop.down());
+    // anomalía: muchos más paraguas
+    B.when('an_umb', true, () => { for (let k = 0; k < 12; k++) { const x = -1.1 + k * 0.42; B.cyl('dark', [x, Y1 + 0.02, -7.3], [x + 0.05, Y1 + 0.86, -7.4], 0.009, 5); B.cyl('umbrella', [x + 0.005, Y1 + 0.18, -7.3], [x + 0.045, Y1 + 0.82, -7.38], 0.016, 10, { r2: 0.075 }); } });
+  });
+  // cartel del piso (se redibuja en cada vuelta de la escalera)
+  B.deferred.push((baker, ctx) => {
+    const cv = mkCanvas(512, 256), t = toTex(cv, { repeat: false }); ctx.owned.tex.push(t);
+    const m = new THREE.MeshBasicMaterial({ map: t, color: new THREE.Color(1.1, 1.1, 1.1) }); ctx.owned.mat.push(m);
+    const mesh = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 0.45), m); mesh.name = 'loopSign'; mesh.userData.cv = cv; mesh.userData.cond = { flag: 'act2', state: true };
+    mesh.position.set(-W + 0.012, Y1 + 1.55, -8.2); mesh.rotation.y = PI / 2; mesh.updateMatrixWorld(); ctx.group.add(mesh);
+  });
   // ---------- Sonido ----------
   B.emitter({ type: 'hum', pos: [0, CH - 0.1, 1.3], gain: 0.06, group: 'u' });
   B.emitter({ type: 'hum', pos: [-W + 0.1, ceilF1(-3) - 0.3, -3], gain: 0.045 });

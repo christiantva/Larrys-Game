@@ -56,6 +56,7 @@ export const ORDER = [
   'gameplay/keypad.js',
   'gameplay/sanity.js',
   'gameplay/scares.js',
+  'gameplay/stair-loop.js',
   'gameplay/save.js',
   'gameplay/ending.js',
   // --- carteles y props ---

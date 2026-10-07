@@ -16,9 +16,10 @@ const Game = {
   resetRun(sv) {
     for (const k of Object.keys(Flags)) delete Flags[k];
     if (sv) Object.assign(Flags, sv.flags || {});
+    for (const a of LOOP_ANOMS) delete Flags['an_' + a];       // anomalías de la escalera: nunca se guardan
     Inv.load(sv ? sv.inv : null); Notes.load(sv ? sv.notes : null);
     Flashlight.battery = sv ? sv.battery ?? CONFIG.BATTERY_START : CONFIG.BATTERY_START;
-    Sanity.reset(sv ? sv.tension || 0 : 0); Scares.reset(sv ? sv.done : null); Ending.reset();
+    Sanity.reset(sv ? sv.tension || 0 : 0); StairLoop.stop(); Scares.reset(sv ? sv.done : null); Ending.reset();
     for (const z of Zones.cache.values()) z.refreshVariants();
   },
   async start(cont = false) {
@@ -89,7 +90,7 @@ const Game = {
     if (wait) await new Promise((r) => setTimeout(r, wait * 1000));
     AudioSys.setWorld(0, 0.25);
     await this.fadeTo(1, CONFIG.FADE_TIME);
-    Scares.clear();
+    StairLoop.stop(); Scares.clear();
     if (Ending.phase) { Ending.reset(); delete Flags.trainHere; for (const zz of Zones.cache.values()) zz.refreshVariants(); }   // el tren se va si te alejas
     const z = Zones.activate(to, spawn);
     Zones.prebuild();

@@ -1305,8 +1305,9 @@ class ZoneCtx {
   }
   // Puerta: con E cambia de zona. flag = atajo requerido; unlock = atajo que desbloquea al usarla
   // item = objeto que la abre (se gasta y activa 'flag'); msg = texto si sigue cerrada
-  door({ box, to, spawn, flag = null, unlock = null, pos, kind = 'door', item = null, msg = null, label = 'Abrir' }) {
+  door({ box, to, spawn, flag = null, unlock = null, pos, kind = 'door', item = null, msg = null, label = 'Abrir', lock = null }) {
     this.interact(box, () => {
+      const lm = lock && lock(); if (lm) { AudioSys.doorRattle(pos); Hud.msg(lm); return; }
       if (flag && !Flags[flag] && item && Inv.has(item)) { Inv.take(item); setFlag(flag); Hud.msg('Usas: ' + ITEMS[item].name); AudioSys.unlock(pos); }
       if ((flag && !Flags[flag]) || !ZONE_DEFS[to]) { if (kind === 'shutter') AudioSys.shutterRattle(pos); else AudioSys.doorRattle(pos); if (msg) Hud.msg(msg); return; }
       if (unlock) setFlag(unlock);
@@ -3428,6 +3429,79 @@ const Scares = {
     this.after(6.0, () => Sanity.scare(0.15, 0.3));
   },
 };
+// ==== src/gameplay/stair-loop.js ====
+/* =====================================================================
+   ESCALERA INFINITA (2º acto) — al bajar hacia el andén, la escalera se
+   repite. Regla: si ves algo raro, da la vuelta; si no, sigue bajando.
+   Hay que acertar 8 veces seguidas; un error devuelve a B1.
+   ===================================================================== */
+const LOOP_ANOMS = ['fig', 'exit', 'dark', 'umb', 'door', 'mirror'];
+const StairLoop = {
+  on: false, n: 0, anom: null, visited: false, sign: null, cv: null, tex: null,
+  active() { return this.on && Zones.current && Zones.current.id === 'z2'; },
+  start() {
+    if (this.on || Flags.loopDone || !Flags.act2) return;
+    this.on = true; this.n = 0; this.roll(true);
+    Hud.sub('…otra vez esta escalera.', 3);
+  },
+  stop() { if (!this.on) return; this.on = false; this.clearAnom(); },
+  // Nueva vuelta: a veces aparece una anomalía
+  roll(first) {
+    this.clearAnom(); this.visited = false;
+    this.anom = !first && Math.random() < 0.5 ? pick(LOOP_ANOMS) : null;
+    const a = this.anom;
+    if (a === 'exit' || a === 'umb' || a === 'door') setFlag('an_' + a);
+    else if (a === 'dark') Scares.pw = { to: 0.04, speed: 4 };
+    else if (a === 'fig') Scares.apparition([2.7, -4.08, -9.75], { stare: 999, near: 1.1, life: 9999, quiet: true });
+    this.drawSign(a === 'mirror');
+  },
+  clearAnom() {
+    let ch = false;
+    for (const a of LOOP_ANOMS) if (Flags['an_' + a]) { delete Flags['an_' + a]; ch = true; }
+    if (ch) for (const z of Zones.cache.values()) z.refreshVariants();
+    if (this.anom === 'fig' && Scares.fig) { Scares.fig = null; Scares.mesh.visible = false; }
+    if (this.anom === 'dark') Scares.pw = { to: 1, speed: 4 };
+    this.anom = null;
+  },
+  // Cartel del piso en el rellano (se redibuja en cada vuelta)
+  drawSign(mirror) {
+    const z = Zones.current; if (!z || z.id !== 'z2') return;
+    const m = z.group.getObjectByName('loopSign'); if (!m) return;
+    const g = m.userData.cv.getContext('2d'), w = 512, h = 256, f = this.n + 1;
+    g.setTransform(1, 0, 0, 1, 0, 0); g.fillStyle = '#16191b'; g.fillRect(0, 0, w, h);
+    if (mirror) { g.translate(w, 0); g.scale(-1, 1); }
+    g.fillStyle = '#f2c230'; g.fillRect(0, 0, 150, h);
+    txt(g, 'B' + f, 75, h / 2 + 4, 92, '#16191b', { font: EN, align: 'center', weight: '900' });
+    txt(g, `地下${f}階`, 175, 92, 54, '#f2f2f2'); txt(g, `Floor B${f}`, 178, 168, 36, '#9aa4aa', { font: EN, weight: '500' });
+    m.material.map.needsUpdate = true;
+  },
+  visit() { if (this.on) this.visited = true; },
+  // Volver a subir: correcto solo si había algo raro
+  back() {
+    if (!this.on || !this.visited) return;
+    this.judge(!!this.anom);
+    Sanity.doBlink(); Player.yaw += PI; AudioSys.staticBurst(0.08);
+  },
+  // Seguir bajando: correcto solo si no había nada raro
+  down() {
+    if (!this.on || !this.visited) return;
+    const ok = !this.anom;
+    if (ok && this.n + 1 >= 8) { this.finish(); return; }
+    this.judge(ok);
+    const P = Player.pos, lat = clamp(P.z + 8.7, -1.0, 1.0), s = clamp(P.x - 9.7, 0, 0.8);
+    Sanity.doBlink(); AudioSys.staticBurst(0.08);
+    P.set(lat, 0, 0.9 - s); Player.yaw += PI / 2; Player.camY = P.y + Player.eye; Player.lastY = 0;
+  },
+  judge(ok) {
+    if (ok) { this.n++; if (this.n >= 5) AudioSys.whisper(null, 0.25, 1.2); }
+    else { this.n = 0; AudioSys.stinger(0.35); Sanity.scare(0.12, 0.4); Scares.after(0.5, () => Hud.sub('B1', 1.5)); }
+    this.roll(false);
+  },
+  finish() {
+    this.n = 8; this.stop(); setFlag('loopDone'); Save.write();
+    Hud.sub('…la escalera por fin se acaba.', 4); AudioSys.chime();
+  },
+};
 // ==== src/gameplay/save.js ====
 /* =====================================================================
    GUARDADO — automático (al cambiar de zona, recoger algo, leer una nota...)
@@ -4060,6 +4134,22 @@ Object.assign(Signs, {
     g.fillRect(10, 176, w - 20, 34); txt(g, 'お母さん', w / 2, 193, 13, '#fff', { align: 'center' });
   }),
 });
+Object.assign(Signs, {
+  exitSignRed() {
+    const cv = Signs.exitSign(), g = cv.getContext('2d');
+    g.globalCompositeOperation = 'color'; g.fillStyle = '#d01a10'; g.fillRect(0, 0, cv.width, cv.height); g.globalCompositeOperation = 'source-over';
+    return cv;
+  },
+  // Normas de la escalera (2º acto)
+  loopRules: () => signCanvas(400, 500, (g, w, h) => {
+    g.fillStyle = '#f2f0e8'; g.fillRect(0, 0, w, h); g.fillStyle = '#c8282a'; g.fillRect(0, 0, w, 64);
+    txt(g, 'ご案内  AVISO', w / 2, 34, 30, '#fff', { align: 'center' });
+    const L = [['異変を見つけたら、', 24], ['すぐに引き返すこと。', 24], ['異変が見つからなかったら、', 24], ['引き返さないこと。', 24], ['', 10],
+      ['Si ves algo extraño,', 26], ['da la vuelta.', 26], ['Si no, sigue bajando.', 26], ['', 10], ['B8 → 出口  salida', 30]];
+    let y = 100; for (const [s, sz] of L) { if (s) txt(g, s, 26, y, sz, '#1a1a1a', { font: /[a-zA-Z]/.test(s) ? EN : JP, weight: s.startsWith('B8') ? '900' : '600' }); y += sz + 14; }
+    g.fillStyle = 'rgba(120,10,8,0.6)'; g.fillRect(250, 420, 3, 60); g.fillRect(300, 430, 3, 45);
+  }),
+});
 // ==== src/zones/props.js ====
 /* =====================================================================
    PROPS reutilizables
@@ -4459,13 +4549,16 @@ function buildZone2() {
   B.tactile('dots', 9.7, 10.0, -10.2, -7.2, Y2);
   B.tactile('bars', -0.15, 0.15, -10.2, -7.8, Y1, 'z'); B.tactile('bars', 0.15, 3.4, -8.85, -8.55, Y1, 'x');
   // ---------- Puerta cerrada al fondo del rellano ----------
-  B.box('white', -0.5, Y1, -10.2, 0.5, Y1 + 2.05, -10.165, { seg: 0.6 });
+  B.when('an_door', false, () => B.box('white', -0.5, Y1, -10.2, 0.5, Y1 + 2.05, -10.165, { seg: 0.6 }));
+  B.when('an_door', true, () => { B.box('white', 0.46, Y1, -10.2, 0.5, Y1 + 2.05, -9.2, { seg: 0.6 }); B.emissiveBox(0x000000, 0, -0.5, Y1, -10.19, 0.46, Y1 + 2.05, -10.18); });
   B.box('grey', -0.56, Y1 + 2.05, -10.2, 0.56, Y1 + 2.11, -10.15); B.box('grey', -0.56, Y1, -10.2, -0.5, Y1 + 2.05, -10.15); B.box('grey', 0.5, Y1, -10.2, 0.56, Y1 + 2.05, -10.15);
   B.cyl('metal', [0.36, Y1 + 1.0, -10.16], [0.36, Y1 + 1.0, -10.1], 0.02, 6, { caps: true }); B.cyl('metal', [0.36, Y1 + 1.0, -10.1], [0.22, Y1 + 1.0, -10.1], 0.016, 6, { caps: true });
   B.poster(Signs.staffOnly(), [0, Y1 + 1.55, -10.16], '+z', 0.56, 0.14, { off: 0.003 });
   // puerta de servicio: atajo hacia el túnel en obras (se desbloquea desde el otro lado)
-  B.door({ box: { x0: -0.5, x1: 0.5, y0: Y1, y1: Y1 + 2.05, z0: -10.25, z1: -10.1 }, to: 'z5', spawn: 'fromZ2', flag: 'svcDoor', pos: [0, Y1 + 1.0, -10.1], msg: 'Solo personal. Cerrada desde el otro lado.' });
-  B.glowSign(Signs.exitSign(), [0, Y1 + 2.35, -10.16], '+z', 0.5, 0.25, 1.4);
+  B.door({ box: { x0: -0.5, x1: 0.5, y0: Y1, y1: Y1 + 2.05, z0: -10.25, z1: -10.1 }, to: 'z5', spawn: 'fromZ2', flag: 'svcDoor', pos: [0, Y1 + 1.0, -10.1], msg: 'Solo personal. Cerrada desde el otro lado.',
+    lock: () => (StairLoop.active() ? 'No cede. Al otro lado alguien respira.' : null) });
+  B.when('an_exit', false, () => B.glowSign(Signs.exitSign(), [0, Y1 + 2.35, -10.16], '+z', 0.5, 0.25, 1.4));
+  B.when('an_exit', true, () => B.glowSign(Signs.exitSignRed(), [0, Y1 + 2.35, -10.16], '+z', 0.5, 0.25, 1.6, { key: 'exitRed' }));
   B.bake({ p: [0, Y1 + 2.3, -10.0], color: lin(0x2aff8a), I: 0.22, range: 3, dir: [0, 0, 1], dmin: 0.1, bounce: 0.02 });
   B.glow([0, Y1 + 2.35, -10.05], [0.02, 0.12, 0.05], 0.8);
   // ---------- Carteles y detalles de "vida pasada" ----------
@@ -4480,7 +4573,8 @@ function buildZone2() {
     // paraguas olvidados que antes no estaban
     for (let k = 0; k < 4; k++) { const x = 1.6 + k * 0.5; B.cyl('dark', [x, Y1 + 0.02, -10.1], [x + 0.05, Y1 + 0.86, -10.0], 0.009, 5); B.cyl('umbrella', [x + 0.005, Y1 + 0.18, -10.1], [x + 0.045, Y1 + 0.82, -10.02], 0.016, 10, { r2: 0.075 }); }
   });
-  B.poster(Signs.notice(21, 'お願い'), [W, 1.5, 1.4], '-x', 0.32, 0.45);
+  B.when('act2', false, () => B.poster(Signs.notice(21, 'お願い'), [W, 1.5, 1.4], '-x', 0.32, 0.45));
+  B.when('act2', true, () => B.glowSign(Signs.loopRules(), [W - 0.01, 1.55, 1.2], '-x', 0.9, 1.1, 0.9));
   for (const [z, r] of [[-2.4, 0], [-4.9, 0], [-3.6, 1]]) { const y = stairF1(z) + 1.55, x0 = r ? W - 0.015 : -W, x1 = r ? W : -W + 0.015; B.box('metal', x0, y - 0.45, z - 0.33, x1, y + 0.45, z + 0.33, { skip: [r ? 'px' : 'nx'] }); }
   B.glowSign(Signs.gates(), [2.4, Y1 + 2.1, -10.17], '+z', 1.6, 0.4, 1.1);
   B.box('red', -W, Y1 + 0.75, -9.55, -W + 0.18, Y1 + 1.35, -9.15); B.poster(Signs.extinguisher(), [-W + 0.18, Y1 + 1.05, -9.35], '+x', 0.36, 0.56, { off: 0.003 });
@@ -4544,6 +4638,22 @@ function buildZone2() {
   // el tubo averiado del segundo tramo revienta al pasar
   B.trigger({ x0: 6.2, x1: 7.6, z0: -10.2, z1: -7.2 }, (z) => Scares.lampBurst(z, 'f2', [5.6, ceilF2(5.6) - 0.3, -7.3]), { id: 'z2pop' });
   B.when('act2', true, () => B.trigger({ x0: -W, x1: 3.0, z0: -9.0, z1: -7.6 }, () => Scares.slam([0, Y1 + 1.0, -10.1]), { id: 'z2slam' }));
+  // ---------- 2º acto: escalera infinita ----------
+  B.when('act2', true, () => {
+    B.trigger({ x0: -W, x1: W, z0: 1.45, z1: 2.4, y0: -0.5, y1: 0.5 }, () => StairLoop.start());
+    B.trigger({ x0: -W, x1: 4.0, z0: -10.2, z1: -7.4, y0: Y1 - 0.5, y1: Y1 + 0.5 }, () => StairLoop.visit());
+    B.trigger({ x0: -W, x1: W, z0: 0.2, z1: 1.4, y0: -0.5, y1: 0.5 }, () => StairLoop.back());
+    B.trigger({ x0: 9.7, x1: 10.6, z0: -10.2, z1: -7.2 }, () => StairLoop.down());
+    // anomalía: muchos más paraguas
+    B.when('an_umb', true, () => { for (let k = 0; k < 12; k++) { const x = -1.1 + k * 0.42; B.cyl('dark', [x, Y1 + 0.02, -7.3], [x + 0.05, Y1 + 0.86, -7.4], 0.009, 5); B.cyl('umbrella', [x + 0.005, Y1 + 0.18, -7.3], [x + 0.045, Y1 + 0.82, -7.38], 0.016, 10, { r2: 0.075 }); } });
+  });
+  // cartel del piso (se redibuja en cada vuelta de la escalera)
+  B.deferred.push((baker, ctx) => {
+    const cv = mkCanvas(512, 256), t = toTex(cv, { repeat: false }); ctx.owned.tex.push(t);
+    const m = new THREE.MeshBasicMaterial({ map: t, color: new THREE.Color(1.1, 1.1, 1.1) }); ctx.owned.mat.push(m);
+    const mesh = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 0.45), m); mesh.name = 'loopSign'; mesh.userData.cv = cv; mesh.userData.cond = { flag: 'act2', state: true };
+    mesh.position.set(-W + 0.012, Y1 + 1.55, -8.2); mesh.rotation.y = PI / 2; mesh.updateMatrixWorld(); ctx.group.add(mesh);
+  });
   // ---------- Sonido ----------
   B.emitter({ type: 'hum', pos: [0, CH - 0.1, 1.3], gain: 0.06, group: 'u' });
   B.emitter({ type: 'hum', pos: [-W + 0.1, ceilF1(-3) - 0.3, -3], gain: 0.045 });
@@ -5507,9 +5617,10 @@ const Game = {
   resetRun(sv) {
     for (const k of Object.keys(Flags)) delete Flags[k];
     if (sv) Object.assign(Flags, sv.flags || {});
+    for (const a of LOOP_ANOMS) delete Flags['an_' + a];       // anomalías de la escalera: nunca se guardan
     Inv.load(sv ? sv.inv : null); Notes.load(sv ? sv.notes : null);
     Flashlight.battery = sv ? sv.battery ?? CONFIG.BATTERY_START : CONFIG.BATTERY_START;
-    Sanity.reset(sv ? sv.tension || 0 : 0); Scares.reset(sv ? sv.done : null); Ending.reset();
+    Sanity.reset(sv ? sv.tension || 0 : 0); StairLoop.stop(); Scares.reset(sv ? sv.done : null); Ending.reset();
     for (const z of Zones.cache.values()) z.refreshVariants();
   },
   async start(cont = false) {
@@ -5580,7 +5691,7 @@ const Game = {
     if (wait) await new Promise((r) => setTimeout(r, wait * 1000));
     AudioSys.setWorld(0, 0.25);
     await this.fadeTo(1, CONFIG.FADE_TIME);
-    Scares.clear();
+    StairLoop.stop(); Scares.clear();
     if (Ending.phase) { Ending.reset(); delete Flags.trainHere; for (const zz of Zones.cache.values()) zz.refreshVariants(); }   // el tren se va si te alejas
     const z = Zones.activate(to, spawn);
     Zones.prebuild();
@@ -5798,7 +5909,7 @@ async function boot() {
   window.__booted = true;
   Game.show('menu');
   Game.fadeTo(0, 2.0);
-  if (DEBUG) window.__game = { Flags, Music, TEXT, Tex, TEX, Game, Zones, Player, AudioSys, World, Flashlight, S, Q: () => Q, CONFIG,
+  if (DEBUG) window.__game = { StairLoop, Flags, Music, TEXT, Tex, TEX, Game, Zones, Player, AudioSys, World, Flashlight, S, Q: () => Q, CONFIG,
     Inv, Notes, Sanity, Scares, Save, Ending, Keypad, Inventory, Hud, Power, setFlag,
     tp(id, spawn) { return Game.transition(id, spawn); },
     act(label, n = 0) { const l = Zones.current.inter.filter((i) => condOk(i.cond) && (typeof i.label === 'function' ? i.label() : i.label) === label); if (l[n]) { l[n].action(); return true; } return false; },

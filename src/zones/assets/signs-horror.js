@@ -124,3 +124,19 @@ Object.assign(Signs, {
     g.fillRect(10, 176, w - 20, 34); txt(g, 'お母さん', w / 2, 193, 13, '#fff', { align: 'center' });
   }),
 });
+Object.assign(Signs, {
+  exitSignRed() {
+    const cv = Signs.exitSign(), g = cv.getContext('2d');
+    g.globalCompositeOperation = 'color'; g.fillStyle = '#d01a10'; g.fillRect(0, 0, cv.width, cv.height); g.globalCompositeOperation = 'source-over';
+    return cv;
+  },
+  // Normas de la escalera (2º acto)
+  loopRules: () => signCanvas(400, 500, (g, w, h) => {
+    g.fillStyle = '#f2f0e8'; g.fillRect(0, 0, w, h); g.fillStyle = '#c8282a'; g.fillRect(0, 0, w, 64);
+    txt(g, 'ご案内  AVISO', w / 2, 34, 30, '#fff', { align: 'center' });
+    const L = [['異変を見つけたら、', 24], ['すぐに引き返すこと。', 24], ['異変が見つからなかったら、', 24], ['引き返さないこと。', 24], ['', 10],
+      ['Si ves algo extraño,', 26], ['da la vuelta.', 26], ['Si no, sigue bajando.', 26], ['', 10], ['B8 → 出口  salida', 30]];
+    let y = 100; for (const [s, sz] of L) { if (s) txt(g, s, 26, y, sz, '#1a1a1a', { font: /[a-zA-Z]/.test(s) ? EN : JP, weight: s.startsWith('B8') ? '900' : '600' }); y += sz + 14; }
+    g.fillStyle = 'rgba(120,10,8,0.6)'; g.fillRect(250, 420, 3, 60); g.fillRect(300, 430, 3, 45);
+  }),
+});

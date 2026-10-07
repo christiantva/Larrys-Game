@@ -25,6 +25,8 @@ el miedo viene de la oscuridad, los sonidos y lo que cambia cuando no miras.
 - **Aguante y respiración:** correr cansa; con miedo o agotado se oye tu respiración.
 - **Terror psicológico:** algo aparece en el borde de la vista y se esfuma al mirarlo, a veces otros pasos imitan los tuyos,
   la megafonía habla sola, hay imágenes subliminales, cosas que cambian cuando les das la espalda y un pasillo que se repite.
+- **Escalera infinita (2º acto):** al volver a bajar, la escalera se repite. Si ves algo raro, da la vuelta; si no, sigue bajando.
+  Un error te devuelve a B1; hay que llegar a B8.
 - **Imagen:** resplandor de las luces, adaptación del ojo a la oscuridad y neblina en el haz de la linterna (calidad media/alta).
 - **Puzles:** monedas → billete → torniquetes → llave → fusible → clave → tenaza del revisor. Las notas dan las pistas.
 - **Guardado automático** al cambiar de zona, recoger objetos o leer notas. «Continuar» en el menú.
