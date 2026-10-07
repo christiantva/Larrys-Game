@@ -32,7 +32,9 @@ const Flashlight = {
     this.flickT -= dt;
     if (this.flickT <= 0) {
       this.flickT = rand(0.05, 0.12);
-      this.flick = Math.random() < (low ? 0.16 : 0.025) ? rand(low ? 0.05 : 0.35, 0.7) : rand(0.96, 1.0);
+      // con poca pila, o con la tensión muy alta, la linterna falla sola
+      const bad = low ? 0.16 : Sanity.t > 0.7 ? 0.06 : 0.025;
+      this.flick = Math.random() < bad ? rand(low || Sanity.t > 0.7 ? 0.05 : 0.35, 0.7) : rand(0.96, 1.0);
     }
     const weak = this.battery < 25 ? 0.45 + 0.55 * (this.battery / 25) : 1;
     const L = World.flash;

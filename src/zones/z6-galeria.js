@@ -42,7 +42,14 @@ function buildZone6() {
     }
   };
   // pasillo A
-  shop('z', -1.2, -21, -18.4, 1, 3, { notice: true }); shop('z', -1.2, -17.6, -15, 1, 6); shop('z', -1.2, -14.2, -11.6, 1, 10, { notice: true });
+  shop('z', -1.2, -21, -18.4, 1, 3, { notice: true });
+  // esta persiana se abre sola cuando le das la espalda
+  B.when('z6open', false, () => shop('z', -1.2, -17.6, -15, 1, 6));
+  B.when('z6open', true, () => {
+    B.box('shutter', -17.6, 1.15, -1.2, -15, 2.15, -1.14, { seg: 0.7, skip: ['ny'] }); B.box('dark', -17.65, 2.15, -1.2, -14.95, 2.25, -1.0);
+    B.emissiveBox(0x000000, 0, -17.55, 0, -1.2, -15.05, 1.15, -1.19);
+    B.poster(Signs.shops, [-16.3, 2.45, -1.2], '+z', 2.4, 0.32, { key: 'shops', uv: [0, 1 - 4 / 8, 0.5, 1 - 3 / 8], off: 0.01 });
+  }); shop('z', -1.2, -14.2, -11.6, 1, 10, { notice: true });
   shop('z', -1.2, -10.8, -8.2, 1, 4); shop('z', -1.2, -7.4, -4.8, 1, 15);
   shop('z', 1.2, -21, -18.4, -1, 8); shop('z', 1.2, -17.6, -15, -1, 13, { notice: true }); shop('z', 1.2, -14.6, -12, -1, 11);
   shop('z', 1.2, -8.2, -5.6, -1, 2); shop('z', 1.2, -4.8, -2.2, -1, 9); shop('z', 1.2, -1.4, 1.2, -1, 7); shop('z', 1.2, 3.0, 5.6, -1, 14, { notice: true }); shop('z', 1.2, 6.4, 8.6, -1, 12);
@@ -166,6 +173,7 @@ function buildZone6() {
   B.decal('crack', Signs.crack, [-2, CH - 0.004, -10], '-y', 1.6, 1.6);
   B.trigger({ x0: -11.2, x1: -8.8, z0: 0, z1: 2.2 }, () => Scares.phoneStart([-10.7, 1.2, 6.85]), { id: 'z6phone' });
   B.trigger({ x0: -14, x1: -12, z0: -1.2, z1: 1.2 }, () => { Scares.slam([-17.5, 1.2, -1.3], 0.8); AudioSys.shutterRattle([-17.5, 1.2, -1.3]); }, { id: 'z6slam' });
+  B.trigger({ x0: -10, x1: -8, z0: -1.2, z1: 1.2 }, () => Scares.whenUnseen([-16.3, 1.0, -1.2], () => { setFlag('z6open'); AudioSys.shutterRattle([-16.3, 1.0, -1.2]); Sanity.scare(0.08, 0.2); }), { id: 'z6swap' });
   B.trigger({ x0: 6.6, x1: 9.0, z0: -6.2, z1: -5.0 }, () => Scares.apparition([7.8, 0, -15.4], { stare: 0.5, near: 4, life: 30 }), { id: 'z6fig' });
   // ---------- Sonido ----------
   B.emitter({ type: 'hum', pos: [LX, LY, LZ], gain: 0.05, group: 'lamp', sizzle: 2.0, harm: [0.7, 0.5, 0.3, 0.2] });

@@ -174,6 +174,11 @@
   @media (max-width: 640px) { .invBody { grid-template-columns: 1fr; } #invList { grid-template-columns: repeat(4, 60px); } .slot { width: 60px; height: 60px; } }
   @media (max-height: 560px) { .panel { max-height: 92vh; padding: 12px 16px; } #ending p { font-size: 14px; } #ending p.big { font-size: 36px; margin: 10px 0; } #ending .fin { margin-top: 14px; } }
   #tbInv { right: calc(14px + env(safe-area-inset-right)); top: calc(66px + env(safe-area-inset-top)); width: 42px; height: 42px; }
+  #stam { position: fixed; left: 50%; bottom: calc(26px + env(safe-area-inset-bottom)); transform: translateX(-50%); opacity: 0; transition: opacity .8s; }
+  #stam.on { opacity: .55; }
+  #stam i { display: block; width: 120px; height: 2px; background: rgba(217,222,226,.12); }
+  #stam s { display: block; height: 100%; background: rgba(217,222,226,.7); text-decoration: none; }
+  #stam s.low { background: #b0584a; }
 </style>
 <!-- Three.js desde CDN con versión fijada. Necesita internet la primera vez que se abre. -->
 <script type="importmap">
@@ -262,6 +267,7 @@
 <div id="hud" class="hidden">
   <div id="hint"></div>
   <div id="toasts"></div>
+  <div id="stam"><i><s id="stamFill"></s></i></div>
   <div id="batt"><svg viewBox="0 0 24 24"><path d="M8 4h8l-1 6H9z"/><path d="M9 10h6v10H9z"/></svg><i><s id="battFill"></s></i></div>
 </div>
 <div id="sub"></div>
@@ -316,6 +322,8 @@ const CONFIG = {
   WALK_SPEED: 1.45,        // m/s caminando
   RUN_SPEED: 2.9,          // m/s corriendo (Shift)
   CROUCH_SPEED: 0.75,      // m/s agachado (C)
+  RUN_TIME: 7,             // segundos que aguantas corriendo
+  RUN_RECOVER: 9,          // segundos para recuperar el aliento del todo
   STAIR_SPEED: 0.62,       // multiplicador de velocidad en escaleras
   EYE_HEIGHT: 1.6,         // altura de los ojos de pie
   CROUCH_EYE: 1.0,         // altura de los ojos agachado
@@ -406,8 +414,8 @@ function saveSettings() { try { localStorage.setItem(SETTINGS_KEY, JSON.stringif
 // Calidad: resolución interna, MSAA, luces reales, post-procesado, distancia de dibujo, audio, sombras de la linterna
 const QUALITY = {
   low:    { scale: 0.6,  samples: 0, realLights: 1, ca: false, hrtf: false, far: 45,  fog: 1.2,  irMax: 2.2 },
-  medium: { scale: 0.8,  samples: 0, realLights: 2, ca: true,  hrtf: true,  far: 70,  fog: 1.0,  irMax: 3.5 },
-  high:   { scale: 1.0,  samples: 4, realLights: 3, ca: true,  hrtf: true,  far: 100, fog: 0.9,  irMax: 5.0, shadows: true },
+  medium: { scale: 0.8,  samples: 0, realLights: 2, ca: true,  hrtf: true,  far: 70,  fog: 1.0,  irMax: 3.5, bloom: true, cone: true },
+  high:   { scale: 1.0,  samples: 4, realLights: 3, ca: true,  hrtf: true,  far: 100, fog: 0.9,  irMax: 5.0, shadows: true, bloom: true, cone: true },
 };
 let Q = QUALITY.medium;
 
@@ -2280,6 +2288,38 @@ Object.assign(AudioSys, {
   },
   gateOpen(pos) { if (!this.ready) return; const d = this.at(pos, 0.6), t = this.ctx.currentTime + 0.02; this.tone(d, t, 1760, 0.04, 0.004, 0.1, 'square'); this.thumpTo(d, t + 0.15, 120, 0.3); this.metalHit(d, t + 0.18, 0.12, 700); },
 });
+Object.assign(AudioSys, {
+  // Respiración del jugador: inspiración + espiración con ruido filtrado (más fuerte y rápida al cansarse)
+  breath(k, quiet) {
+    if (!this.ready) return; const d = this.tmp(1, 0.05, 4000), t = this.ctx.currentTime + 0.02, v = (0.05 + 0.13 * k) * (quiet ? 0.6 : 1);
+    const inD = lerp(0.9, 0.35, k), outD = lerp(1.1, 0.45, k);
+    this.noiseBurst(d, t, 'bandpass', rand(1100, 1500), 1.1, v * 0.7, inD * 0.6, inD * 0.4, 'pink');
+    this.noiseBurst(d, t + inD + 0.05, 'bandpass', rand(700, 950), 0.9, v, outD * 0.3, outD * 0.7, 'pink');
+  },
+  // Chasquido de estática (imágenes subliminales)
+  staticBurst(v = 0.3) {
+    if (!this.ready) return; const d = this.tmp(1, 0.3), t = this.ctx.currentTime + 0.005;
+    this.noiseBurst(d, t, 'highpass', 1500, 0.7, v, 0.003, 0.18); this.tone(d, t, 60, v * 0.6, 0.003, 0.25, 'square', 40);
+  },
+  // Megafonía distorsionada: carillón + voz que no se entiende, con mucha reverberación
+  announce() {
+    if (!this.ready) return; const c = this.ctx, t = c.currentTime + 0.05, d = this.tmp(1, 1.2, 12000);
+    [784, 659, 523].forEach((f, i) => this.tone(d, t + i * 0.42, f, 0.05, 0.01, 1.2));
+    const t0 = t + 1.7, dur = rand(3.2, 4.5);
+    const o = c.createOscillator(); o.type = 'sawtooth'; o.frequency.setValueAtTime(rand(105, 130), t0);
+    const vib = c.createOscillator(), vg = this.gain(6); vib.frequency.value = 5; vib.connect(vg); vg.connect(o.frequency);
+    const f1 = this.filt('bandpass', 600, 5), f2 = this.filt('bandpass', 1500, 6), hp = this.filt('highpass', 350), lp = this.filt('lowpass', 3000), g = this.gain(0);
+    o.connect(f1); o.connect(f2); f1.connect(hp); f2.connect(hp); hp.connect(lp); lp.connect(g); g.connect(d);
+    const n = Math.round(dur / 0.16);
+    for (let i = 0; i < n; i++) {
+      const tt = t0 + (i / n) * dur; f1.frequency.setValueAtTime(rand(300, 850), tt); f2.frequency.setValueAtTime(rand(900, 2400), tt);
+      o.frequency.setTargetAtTime(rand(95, 140) * (i > n * 0.7 ? 0.8 : 1), tt, 0.05);       // la voz se hunde al final
+      g.gain.setValueAtTime(rand(0.06, 0.16), tt); g.gain.setValueAtTime(rand(0, 0.03), tt + dur / n * 0.8);
+    }
+    g.gain.setValueAtTime(0, t0 + dur); o.start(t0); vib.start(t0); o.stop(t0 + dur + 0.1); vib.stop(t0 + dur + 0.1);
+    this.noiseBurst(d, t0, 'bandpass', 2500, 0.6, 0.012, 0.2, dur, 'white');
+  },
+});
 // ==== src/audio/music.js ====
 /* =====================================================================
    MÚSICA OPCIONAL — dark ambient sintetizado: dron + pad lento + campanas suaves
@@ -2413,29 +2453,68 @@ function initWorld() {
 
 // ==== src/render/postfx.js ====
 /* =====================================================================
-   POST-PROCESADO — un solo pase: aberración cromática, tono, viñeta, grano, fundido
+   POST-PROCESADO — resplandor (bloom) a 1/4 de resolución + pase final:
+   aberración, tono, adaptación del ojo, viñeta, grano, efectos de tensión
    ===================================================================== */
+// Cara subliminal (aparece 2-3 fotogramas cuando la tensión es extrema)
+function faceCanvas() {
+  const cv = document.createElement('canvas'); cv.width = cv.height = 256; const g = cv.getContext('2d');
+  // rostro pálido y alargado, sin rasgos definidos: cuencas hundidas y boca entreabierta, todo difuminado
+  g.filter = 'blur(3px)';
+  const sk = g.createRadialGradient(128, 112, 8, 128, 128, 112); sk.addColorStop(0, 'rgba(196,190,180,0.95)'); sk.addColorStop(0.55, 'rgba(120,114,108,0.8)'); sk.addColorStop(1, 'rgba(0,0,0,0)');
+  g.fillStyle = sk; g.beginPath(); g.ellipse(128, 126, 70, 108, 0, 0, PI * 2); g.fill();
+  const hole = (x, y, rx, ry, a) => { const gr = g.createRadialGradient(x, y, 0, x, y, Math.max(rx, ry)); gr.addColorStop(0, `rgba(0,0,0,${a})`); gr.addColorStop(0.6, `rgba(10,8,8,${a * 0.8})`); gr.addColorStop(1, 'rgba(0,0,0,0)');
+    g.fillStyle = gr; g.beginPath(); g.ellipse(x, y, rx, ry, 0, 0, PI * 2); g.fill(); };
+  hole(100, 104, 24, 20, 1); hole(156, 106, 24, 20, 1); hole(128, 140, 8, 14, 0.5); hole(128, 194, 15, 26, 0.95);
+  g.filter = 'none'; const R = mulberry32(3), im = g.getImageData(0, 0, 256, 256), d = im.data;
+  for (let i = 0; i < d.length; i += 4) { const n = (R() - 0.5) * 40; d[i] += n; d[i + 1] += n; d[i + 2] += n; }
+  g.putImageData(im, 0, 0);
+  return cv;
+}
+const BLUR_FS = `uniform sampler2D tIn; uniform vec2 uDir; varying vec2 vUv;
+  void main(){ vec3 c = texture2D(tIn, vUv).rgb * 0.227;
+    c += (texture2D(tIn, vUv + uDir * 1.385).rgb + texture2D(tIn, vUv - uDir * 1.385).rgb) * 0.316;
+    c += (texture2D(tIn, vUv + uDir * 3.231).rgb + texture2D(tIn, vUv - uDir * 3.231).rgb) * 0.070;
+    gl_FragColor = vec4(c, 1.0); }`;
 const Post = {
   rt: null, scene: new THREE.Scene(), cam: new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1), mat: null, w: 1, h: 1,
+  b1: null, b2: null, brightMat: null, blurMat: null, quad: null, adapt: 1,
   init() {
+    const vs = 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }';
+    this.brightMat = new THREE.ShaderMaterial({ uniforms: { tIn: { value: null }, uTexel: { value: new THREE.Vector2() }, uThr: { value: 0.55 } }, vertexShader: vs, depthTest: false, depthWrite: false,
+      fragmentShader: `uniform sampler2D tIn; uniform vec2 uTexel; uniform float uThr; varying vec2 vUv;
+        void main(){ vec3 c = (texture2D(tIn, vUv + uTexel * vec2(-1.0, -1.0)).rgb + texture2D(tIn, vUv + uTexel * vec2(1.0, -1.0)).rgb
+          + texture2D(tIn, vUv + uTexel * vec2(-1.0, 1.0)).rgb + texture2D(tIn, vUv + uTexel * vec2(1.0, 1.0)).rgb) * 0.25;
+          float l = max(c.r, max(c.g, c.b)); gl_FragColor = vec4(c * max(l - uThr, 0.0) / max(l, 1e-4), 1.0); }` });
+    this.blurMat = new THREE.ShaderMaterial({ uniforms: { tIn: { value: null }, uDir: { value: new THREE.Vector2() } }, vertexShader: vs, fragmentShader: BLUR_FS, depthTest: false, depthWrite: false });
+    const face = new THREE.CanvasTexture(faceCanvas());
     this.mat = new THREE.ShaderMaterial({
       uniforms: { tDiffuse: { value: null }, uRes: { value: new THREE.Vector2(1, 1) }, uTime: { value: 0 }, uGrain: { value: CONFIG.GRAIN },
         uVig: { value: CONFIG.VIGNETTE }, uCA: { value: CONFIG.CHROMATIC }, uExp: { value: CONFIG.EXPOSURE }, uFade: { value: 1 },
-        uTen: { value: 0 }, uHit: { value: 0 }, uPulse: { value: 0 } },
+        uTen: { value: 0 }, uHit: { value: 0 }, uPulse: { value: 0 }, tBloom: { value: null }, uBloom: { value: 0 },
+        tFace: { value: face }, uFace: { value: 0 }, uGlitch: { value: 0 }, uBlink: { value: 0 }, uHaze: { value: 0 }, uHazeC: { value: new THREE.Vector2(0.5, 0.5) } },
       vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }',
       fragmentShader: `
-        uniform sampler2D tDiffuse; uniform vec2 uRes; uniform float uTime, uGrain, uVig, uCA, uExp, uFade, uTen, uHit, uPulse; varying vec2 vUv;
+        uniform sampler2D tDiffuse; uniform vec2 uRes; uniform float uTime, uGrain, uVig, uCA, uExp, uFade, uTen, uHit, uPulse, uBloom, uFace, uGlitch, uBlink, uHaze; uniform vec2 uHazeC; uniform sampler2D tBloom, tFace; varying vec2 vUv;
         vec3 aces(vec3 x){ return clamp((x*(2.51*x+0.03))/(x*(2.43*x+0.59)+0.14), 0.0, 1.0); }
         float hash(vec2 p){ p = fract(p * vec2(443.897, 441.423)); p += dot(p, p.yx + 19.19); return fract((p.x + p.y) * p.x); }
         void main(){
           vec2 uv = vUv;
           // tensión alta: la imagen "respira" y se deforma un poco
           if (uTen > 0.55) { float w = (uTen - 0.55) / 0.45; uv += vec2(sin(uv.y * 17.0 + uTime * 1.7), cos(uv.x * 13.0 + uTime * 1.3)) * 0.0028 * w * w; }
+          // fallo de imagen: bandas horizontales desplazadas
+          if (uGlitch > 0.0) { float band = floor(uv.y * 24.0 + floor(uTime * 30.0) * 7.0); float h = hash(vec2(band, floor(uTime * 30.0)));
+            if (h > 0.6) uv.x += (h - 0.8) * 0.12 * uGlitch; }
           vec2 d = uv - 0.5; float r2 = dot(d, d); vec3 c;
           float ca = uCA + uTen * uTen * 0.007 + uHit * 0.008;
           if (ca > 0.0) { vec2 o = d * ca * (0.6 + r2 * 5.0);
             c = vec3(texture2D(tDiffuse, uv + o).r, texture2D(tDiffuse, uv).g, texture2D(tDiffuse, uv - o).b); }
           else c = texture2D(tDiffuse, uv).rgb;
+          c += texture2D(tBloom, uv).rgb * uBloom;                // resplandor de las luces
+          // la linterna ilumina el aire (polvo, humedad): neblina suave alrededor del haz
+          if (uHaze > 0.0) { vec2 hd = (uv - uHazeC) * vec2(uRes.x / uRes.y, 1.0);
+            float sw = 0.8 + 0.2 * sin(uv.x * 9.0 + uTime * 0.6) * sin(uv.y * 7.0 - uTime * 0.45);
+            c += vec3(1.0, 0.92, 0.78) * uHaze * (exp(-dot(hd, hd) * 7.0) * 0.8 + exp(-dot(hd, hd) * 1.6) * 0.25) * sw; }
           c = aces(c * uExp);
           c = pow(c, vec3(1.0 / 2.2));
           // gradación: sombras ligeramente frías, contraste suave de cámara vieja
@@ -2445,16 +2524,19 @@ const Post = {
           float rr = length(d * vec2(uRes.x / uRes.y, 1.0)) * 0.95;
           float v = smoothstep(0.95 - uTen * 0.3 - uPulse * 0.08, 0.25 - uTen * 0.12, rr);
           c *= mix(1.0, v, min(1.0, uVig + uTen * 0.4));
+          // cara subliminal
+          if (uFace > 0.0) { vec2 fu = (uv - 0.5) * vec2(uRes.x / uRes.y, 1.0) * 1.15 + 0.5; vec4 f = texture2D(tFace, fu);
+            c = mix(c, f.rgb * vec3(0.9, 0.9, 0.92), f.a * uFace * 0.75); }
           // destello rojo en los sustos
           c = mix(c, c * vec3(1.3, 0.45, 0.4) + vec3(0.05, 0.0, 0.0), uHit * 0.55);
           float g = hash(vUv * uRes + fract(uTime * 7.31) * 517.0) - 0.5;
           c += g * uGrain * (1.0 + uTen * 1.6) * (0.55 + 0.45 * (1.0 - dot(c, vec3(0.33))));
-          c *= 1.0 - uFade;
+          c *= (1.0 - uFade) * (1.0 - uBlink);
           gl_FragColor = vec4(c, 1.0);
         }`,
       depthTest: false, depthWrite: false,
     });
-    const q = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), this.mat); q.frustumCulled = false; this.scene.add(q);
+    const q = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), this.mat); q.frustumCulled = false; this.scene.add(q); this.quad = q;
   },
   resize() {
     const sc = Q.scale * DynRes.scale;
@@ -2463,13 +2545,41 @@ const Post = {
     const ext = World.renderer.extensions, canFloat = ext.has('EXT_color_buffer_float') || ext.has('EXT_color_buffer_half_float');
     this.rt = new THREE.WebGLRenderTarget(w, h, { type: canFloat ? THREE.HalfFloatType : THREE.UnsignedByteType, samples: Q.samples, depthBuffer: true, stencilBuffer: false });
     this.mat.uniforms.tDiffuse.value = this.rt.texture; this.mat.uniforms.uRes.value.set(w, h); this.w = w; this.h = h;
+    // resplandor: dos objetivos a 1/4 de resolución
+    if (this.b1) { this.b1.dispose(); this.b2.dispose(); }
+    const bw = Math.max(2, w >> 2), bh = Math.max(2, h >> 2), bo = { type: this.rt.texture.type, depthBuffer: false, stencilBuffer: false };
+    this.b1 = new THREE.WebGLRenderTarget(bw, bh, bo); this.b2 = new THREE.WebGLRenderTarget(bw, bh, bo);
+    this.brightMat.uniforms.uTexel.value.set(1 / w, 1 / h); this.bw = bw; this.bh = bh;
+    this.mat.uniforms.tBloom.value = this.b1.texture;
     GlowMat.uniforms.uScale.value = h / (2 * Math.tan(THREE.MathUtils.degToRad(World.camera.fov) / 2));
   },
   render(t, fade) {
     const u = this.mat.uniforms; u.uTime.value = t; u.uFade.value = fade; u.uExp.value = CONFIG.EXPOSURE * S.brightness; u.uCA.value = Q.ca ? CONFIG.CHROMATIC : 0;
     u.uTen.value = Sanity.vis; u.uHit.value = Sanity.hit; u.uPulse.value = Sanity.pulse;
+    u.uFace.value = Sanity.face; u.uGlitch.value = Sanity.glitch; u.uBlink.value = Sanity.blink;
+    // adaptación del ojo: a oscuras la vista se acostumbra poco a poco (y se deslumbra rápido)
+    const lum = Sanity.light + Flashlight.level * 0.12, target = Game.state === 'playing' ? clamp(Math.sqrt(0.14 / Math.max(lum, 0.01)), 0.85, 1.65) : 1;
+    const dt = Math.min(0.1, Math.max(0, t - (this.lastT ?? t))); this.lastT = t;
+    this.adapt += (target - this.adapt) * (1 - Math.exp(-dt / (target > this.adapt ? 3.5 : 0.5)));
+    u.uExp.value *= this.adapt;
+    // neblina de la linterna: centro = hacia dónde apunta en pantalla
+    if (Q.cone && Flashlight.level > 0.02) {
+      _v.copy(World.flash.position).addScaledVector(Flashlight.dir, 4).project(World.camera);
+      u.uHazeC.value.set(_v.x * 0.5 + 0.5, _v.y * 0.5 + 0.5);
+      u.uHaze.value = 0.05 * (World.flash.intensity / CONFIG.FLASH_INTENSITY) * clamp(World.scene.fog.density / 0.04, 0.6, 1.8);
+    } else u.uHaze.value = 0;
     const r = World.renderer;
     r.setRenderTarget(this.rt); r.render(World.scene, World.camera);
+    u.uBloom.value = Q.bloom ? 0.45 : 0;
+    if (Q.bloom) {
+      this.quad.material = this.brightMat; this.brightMat.uniforms.tIn.value = this.rt.texture; r.setRenderTarget(this.b1); r.render(this.scene, this.cam);
+      this.quad.material = this.blurMat; const bu = this.blurMat.uniforms;
+      for (let i = 0; i < 2; i++) {
+        bu.tIn.value = this.b1.texture; bu.uDir.value.set((1 + i) / this.bw, 0); r.setRenderTarget(this.b2); r.render(this.scene, this.cam);
+        bu.tIn.value = this.b2.texture; bu.uDir.value.set(0, (1 + i) / this.bh); r.setRenderTarget(this.b1); r.render(this.scene, this.cam);
+      }
+      this.quad.material = this.mat;
+    }
     r.setRenderTarget(null); r.render(this.scene, this.cam);
   },
 };
@@ -2698,7 +2808,9 @@ const Player = {
   pos: new THREE.Vector3(), vel: new THREE.Vector3(), yaw: 0, pitch: 0,
   eye: CONFIG.EYE_HEIGHT, crouch: false, camY: 0, surface: 'tile', stair: null,
   stepAcc: 0, stepCount: 0, bobAmp: 0, lastY: 0, moving: false,
+  stamina: 1, tired: false, breathT: 2, exert: 0,   // aguante al correr y respiración
   place(sp, zone) {
+    this.stamina = 1; this.tired = false; this.exert = 0;
     const g = zone.groundTop(sp.x, sp.z) || { y: 0 };
     this.pos.set(sp.x, g.y, sp.z); this.yaw = sp.yaw; this.pitch = sp.pitch || 0; this.vel.set(0, 0, 0);
     this.camY = g.y + this.eye; this.lastY = g.y; this.stepAcc = 0; this.bobAmp = 0;
@@ -2732,7 +2844,15 @@ const Player = {
     if (Input.down('KeyA') || Input.down('ArrowLeft')) s -= 1;
     let mag = 1;
     if (Touch.ax || Touch.ay) { f = -Touch.ay; s = Touch.ax; mag = Math.min(1, Math.hypot(f, s)); }   // joystick analógico
-    const running = (Input.down('ShiftLeft') || Input.down('ShiftRight') || (Touch.run && mag > 0.5)) && !this.crouch && f > 0.2;
+    const wantRun = (Input.down('ShiftLeft') || Input.down('ShiftRight') || (Touch.run && mag > 0.5)) && !this.crouch && f > 0.2;
+    // aguante: correr cansa; agotado no puedes correr hasta recuperar el aliento
+    if (this.stamina <= 0.01) this.tired = true; else if (this.stamina > 0.35) this.tired = false;
+    const running = wantRun && !this.tired;
+    this.stamina = clamp(this.stamina + (running ? -dt / CONFIG.RUN_TIME : dt / CONFIG.RUN_RECOVER * (1 - Sanity.t * 0.5)), 0, 1);
+    this.exert = clamp(this.exert + (running ? dt * 0.25 : -dt * 0.08), 0, 1);
+    this.breathT -= dt;
+    const pant = Math.max(this.exert, 1 - this.stamina, Sanity.vis * 0.8);
+    if (this.breathT <= 0) { this.breathT = lerp(3.6, 0.85, pant); if (pant > 0.25) AudioSys.breath(pant, this.crouch); }
     const sy = Math.sin(this.yaw), cy = Math.cos(this.yaw);
     let wx = -sy * f + cy * s, wz = -cy * f - sy * s; const wl = Math.hypot(wx, wz); if (wl > 0) { wx /= wl; wz /= wl; }
     let speed = this.crouch ? CONFIG.CROUCH_SPEED : running ? CONFIG.RUN_SPEED : CONFIG.WALK_SPEED;
@@ -2763,6 +2883,7 @@ const Player = {
         this.stepAcc -= stepLen; this.stepCount++;
         const dy = this.pos.y - this.lastY; this.lastY = this.pos.y;
         AudioSys.footstep(this.surface, { run: running, crouch: this.crouch, stairs: this.stair ? (dy < -0.02 ? 'down' : 'up') : null });
+        Sanity.onStep(this.surface);
       }
     } else if (this.stepAcc > stepLen * 0.45 && sp < 0.08) { // paso final al detenerse
       this.stepAcc = 0; this.stepCount++; AudioSys.footstep(this.surface, { crouch: this.crouch, run: false });
@@ -2823,7 +2944,9 @@ const Flashlight = {
     this.flickT -= dt;
     if (this.flickT <= 0) {
       this.flickT = rand(0.05, 0.12);
-      this.flick = Math.random() < (low ? 0.16 : 0.025) ? rand(low ? 0.05 : 0.35, 0.7) : rand(0.96, 1.0);
+      // con poca pila, o con la tensión muy alta, la linterna falla sola
+      const bad = low ? 0.16 : Sanity.t > 0.7 ? 0.06 : 0.025;
+      this.flick = Math.random() < bad ? rand(low || Sanity.t > 0.7 ? 0.05 : 0.35, 0.7) : rand(0.96, 1.0);
     }
     const weak = this.battery < 25 ? 0.45 + 0.55 * (this.battery / 25) : 1;
     const L = World.flash;
@@ -3087,10 +3210,26 @@ const Keypad = {
    No mata: deforma la imagen, acelera el latido, trae susurros y visiones.
    ===================================================================== */
 const WHISPERS = ['«…まだ…»', '«…ここにいる…»', '«…0:42…»', '«…no mires atrás…»', '«…終電…»', '«…¿por qué bajaste?…»', '«…despierta…»'];
+const ANNOUNCES = ['«お客様にお知らせします… 終電は… まいりません»', '«Próximo tren: ninguno. Próximo tren: ninguno.»', '«…三条京阪… 三条京阪… お忘れ物のないよう…»', '«Se ruega a los pasajeros que no miren atrás.»', '«…まだ、ここにいますか…»'];
 const _eye = new THREE.Vector3();
 const Sanity = {
   t: 0, vis: 0, hit: 0, pulse: 0, shake: 0, light: 1, sampleT: 0, hbT: 1, whT: 30, hallT: 40, dark: false,
-  reset(v = 0) { this.t = v; this.vis = v; this.hit = 0; this.pulse = 0; this.shake = 0; this.whT = rand(25, 40); this.hallT = rand(35, 60); this.hbT = 1; },
+  face: 0, faceT: 0, glitch: 0, blink: 0, periT: 30, subT: 60, annT: 40,
+  reset(v = 0) {
+    this.t = v; this.vis = v; this.hit = 0; this.pulse = 0; this.shake = 0; this.whT = rand(25, 40); this.hallT = rand(35, 60); this.hbT = 1;
+    this.face = 0; this.faceT = 0; this.glitch = 0; this.blink = 0; this.periT = rand(25, 45); this.subT = rand(50, 90); this.annT = rand(30, 60);
+  },
+  // Imagen subliminal: 2-3 fotogramas de una cara + fallo de imagen
+  flashFace() { this.face = 0.9; this.faceT = 0.06; this.glitch = 1; AudioSys.staticBurst(0.35); this.t = Math.min(1, this.t + 0.05); this.shake = Math.max(this.shake, 0.3); },
+  // Parpadeo (oculta los saltos del pasillo que se repite)
+  doBlink() { this.blink = 1; },
+  // Cada paso propio: con tensión, a veces otro paso responde detrás (alguien camina a tu ritmo)
+  onStep(surface) {
+    if (this.t < 0.45 || Math.random() > (this.t - 0.35) * 0.5) return;
+    const p = Player.pos, fx = -Math.sin(Player.yaw), fz = -Math.cos(Player.yaw), d = rand(2.2, 3.5);
+    const pos = [p.x - fx * d, p.y + 0.1, p.z - fz * d];
+    Scares.after(rand(0.16, 0.3), () => AudioSys.stepAt(pos, surface));
+  },
   // Susto: sube la tensión de golpe, destello rojo y temblor
   scare(amount = 0.25, shake = 0.8) { this.t = Math.min(1, this.t + amount); this.hit = 1; this.shake = Math.max(this.shake, shake); },
   // Luz que llega a los ojos del jugador: horneada (escalada por los apagones) + luces reales
@@ -3121,7 +3260,17 @@ const Sanity = {
     this.hit = Math.max(0, this.hit - dt * 1.4);
     this.pulse = Math.max(0, this.pulse - dt * 3.5);
     this.shake = Math.max(0, this.shake - dt * 1.2, (this.vis - 0.75) * 0.5);
+    this.faceT -= dt; if (this.faceT <= 0) this.face = 0;
+    this.glitch = Math.max(0, this.glitch - dt * 4); this.blink = Math.max(0, this.blink - dt * 4);
     if (calm) return;
+    // algo en el borde de la visión: desaparece en cuanto lo miras
+    this.periT -= dt * (0.4 + this.t);
+    if (this.t > 0.35 && this.periT <= 0 && !Scares.fig) { this.periT = rand(28, 55); Scares.peripheral(); }
+    // imagen subliminal con la tensión muy alta
+    this.subT -= dt;
+    if (this.t > 0.72 && this.subT <= 0) { this.subT = rand(45, 90); this.flashFace(); }
+    // 2º acto: la megafonía habla sola
+    if (act2) { this.annT -= dt; if (this.annT <= 0) { this.annT = rand(60, 120); AudioSys.announce(); Hud.sub(pick(ANNOUNCES), 4.5); } }
     // latido
     if (this.vis > 0.35) {
       this.hbT -= dt;
@@ -3168,16 +3317,17 @@ const Scares = {
     // con sombras activas, la silueta proyecta su forma con la linterna
     this.mesh.castShadow = true; this.mesh.customDepthMaterial = new THREE.MeshDepthMaterial({ depthPacking: THREE.RGBADepthPacking, map: t, alphaTest: 0.45 });
   },
-  reset(done) { this.done = done ? { ...done } : {}; this.clear(); },
+  reset(done) { this.done = done ? { ...done } : {}; this.loops = 0; this.clear(); },
   // Corta todo lo que esté en marcha (al cambiar de zona o salir al menú)
   clear() {
-    if (this.mesh) this.mesh.visible = false; this.fig = null; this.seqs = [];
+    if (this.mesh) this.mesh.visible = false; this.fig = null; this.seqs = []; this.unseen = [];
     if (this.phone) { this.phone.stop(); this.phone = null; }
     if (this.pw) { this.pw = null; Power.k = 1; AudioSys.duck(1, 0.5); }
   },
   // Línea de tiempo propia (se congela en pausa, a diferencia de setTimeout)
   after(sec, fn) { this.seqs.push({ t: sec, fn }); },
   update(dt, cam) {
+    this.checkUnseen(cam);
     for (let i = this.seqs.length - 1; i >= 0; i--) { const s = this.seqs[i]; s.t -= dt; if (s.t <= 0) { this.seqs.splice(i, 1); s.fn(); } }
     if (this.pw) {                     // animación de la corriente (apagones)
       const p = this.pw; Power.k += (p.to - Power.k) * (1 - Math.exp(-p.speed * dt));
@@ -3189,7 +3339,7 @@ const Scares = {
     _toF.subVectors(M.position, cam.position); const dist = _toF.length(); _toF.divideScalar(dist || 1);
     _fw.set(0, 0, -1).applyQuaternion(cam.quaternion);
     const look = _fw.dot(_toF), lit = Flashlight.level > 0.5 && Flashlight.dir.dot(_toF) > 0.95 && dist < 14;
-    if ((look > 0.975 && dist < 24) || lit) f.seen += dt * (lit ? 3 : 1);
+    if ((look > f.lookCos && dist < 24) || lit) f.seen += dt * (lit ? 3 : 1);
     f.life -= dt;
     if (f.seen > f.stare || dist < f.near) this.gone(true);
     else if (f.life <= 0) this.gone(false);
@@ -3197,13 +3347,41 @@ const Scares = {
   // Silueta inmóvil en 'p' (pies). Desaparece si la miras fijamente, la alumbras o te acercas
   apparition(p, o = {}) {
     if (!this.mesh) return;
-    this.fig = { p: new THREE.Vector3(p[0], p[1], p[2]), seen: 0, stare: o.stare ?? 0.4, near: o.near ?? 3.2, life: o.life ?? 30, scare: o.scare ?? 0.2, quiet: !!o.quiet, onGone: o.onGone || null };
+    this.fig = { p: new THREE.Vector3(p[0], p[1], p[2]), seen: 0, lookCos: o.lookCos ?? 0.975, stare: o.stare ?? 0.4, near: o.near ?? 3.2, life: o.life ?? 30, scare: o.scare ?? 0.2, quiet: !!o.quiet, onGone: o.onGone || null };
     this.mesh.visible = true;
   },
   gone(seen) {
     const f = this.fig; if (!f) return; this.fig = null; this.mesh.visible = false;
     if (seen && !f.quiet) { AudioSys.vanish([f.p.x, f.p.y + 1.5, f.p.z]); Sanity.scare(f.scare, 0.5); }
     if (f.onGone) f.onGone(seen);
+  },
+  // Presencia periférica: una figura en el límite de la visión que se esfuma al mirarla
+  peripheral() {
+    const z = Zones.current, p = Player.pos;
+    for (let k = 0; k < 8; k++) {
+      const side = Math.random() < 0.5 ? -1 : 1, a = Player.yaw + side * rand(0.85, 1.05), r = rand(5, 10);
+      const x = p.x - Math.sin(a) * r, zz = p.z - Math.cos(a) * r, g = z.groundTop(x, zz);
+      if (g && Math.abs(g.y - p.y) < 1.2) { this.apparition([x, g.y, zz], { lookCos: 0.88, stare: 0.02, near: 3.5, life: rand(4, 8), quiet: true }); return; }
+    }
+  },
+  // Ejecuta fn cuando el punto p quede fuera de la vista (cosas que cambian cuando no miras)
+  whenUnseen(p, fn) { this.unseen = this.unseen || []; this.unseen.push({ p, fn }); },
+  checkUnseen(cam) {
+    if (!this.unseen || !this.unseen.length) return;
+    _fw.set(0, 0, -1).applyQuaternion(cam.quaternion);
+    for (let i = this.unseen.length - 1; i >= 0; i--) {
+      const u = this.unseen[i]; _toF.set(u.p[0] - cam.position.x, u.p[1] - cam.position.y, u.p[2] - cam.position.z); const d = _toF.length();
+      if (d > 2.5 && _fw.dot(_toF.divideScalar(d)) < 0.15) { this.unseen.splice(i, 1); u.fn(); }
+    }
+  },
+  // Pasillo que se repite: tres vueltas, cada una peor
+  corridorLoop(len) {
+    if (this.done.z3loop) return;
+    this.loops = (this.loops || 0) + 1;
+    Sanity.doBlink(); Player.pos.x -= len; Player.camY = Player.pos.y + Player.eye; AudioSys.staticBurst(0.1);
+    if (this.loops === 1) this.after(0.6, () => Hud.sub('…¿no acabo de pasar por aquí?', 3));
+    else if (this.loops === 2) { this.after(0.4, () => { Hud.sub('«…otra vez…»', 3); AudioSys.whisper(null, 0.45, 1.8); }); Sanity.scare(0.12, 0.3); }
+    else { this.done.z3loop = true; this.after(0.3, () => this.blackout(3.5, () => this.steps(6, 'marble', 0.42))); }
   },
   // Visión fugaz delante del jugador (tensión al límite)
   glimpse() {
@@ -4583,6 +4761,8 @@ function buildZone3() {
   B.decal('crack', Signs.crack, [0, 0.004, 5.5], '+y', 2.0, 2.0);
   // al cruzar los torniquetes: apagón, y al volver la luz hay alguien en la escalera
   B.trigger({ x0: 8.2, x1: 10.2, z0: -4, z1: 4 }, (z) => Scares.blackout(4.2, () => { const g = z.groundTop(12.8, 0); Scares.apparition([12.8, g ? g.y : -1.2, 0.2], { stare: 0.35, near: 3, life: 20 }); }), { id: 'z3black', cond: { flag: 'gate', state: true } });
+  // 2º acto: el pasillo desde la escalera se repite (parpadeas y vuelves a estar atrás)
+  B.when('act2', true, () => B.trigger({ x0: -16.9, x1: -15.1, z0: -CW, z1: CW }, () => Scares.corridorLoop(5.6)));
   B.when('act2', true, () => B.trigger({ x0: -14, x1: -10, z0: -1.5, z1: 1.5 }, () => { Hud.sub('«まもなく…終点です»', 3); AudioSys.whisper(null, 0.3); }, { id: 'z3wh' }));
   // ---------- Sonido ----------
   B.emitter({ type: 'hum', pos: [-11.2, CH - 0.1, 2.4], gain: 0.045, group: 'ent' });
@@ -4958,7 +5138,14 @@ function buildZone6() {
     }
   };
   // pasillo A
-  shop('z', -1.2, -21, -18.4, 1, 3, { notice: true }); shop('z', -1.2, -17.6, -15, 1, 6); shop('z', -1.2, -14.2, -11.6, 1, 10, { notice: true });
+  shop('z', -1.2, -21, -18.4, 1, 3, { notice: true });
+  // esta persiana se abre sola cuando le das la espalda
+  B.when('z6open', false, () => shop('z', -1.2, -17.6, -15, 1, 6));
+  B.when('z6open', true, () => {
+    B.box('shutter', -17.6, 1.15, -1.2, -15, 2.15, -1.14, { seg: 0.7, skip: ['ny'] }); B.box('dark', -17.65, 2.15, -1.2, -14.95, 2.25, -1.0);
+    B.emissiveBox(0x000000, 0, -17.55, 0, -1.2, -15.05, 1.15, -1.19);
+    B.poster(Signs.shops, [-16.3, 2.45, -1.2], '+z', 2.4, 0.32, { key: 'shops', uv: [0, 1 - 4 / 8, 0.5, 1 - 3 / 8], off: 0.01 });
+  }); shop('z', -1.2, -14.2, -11.6, 1, 10, { notice: true });
   shop('z', -1.2, -10.8, -8.2, 1, 4); shop('z', -1.2, -7.4, -4.8, 1, 15);
   shop('z', 1.2, -21, -18.4, -1, 8); shop('z', 1.2, -17.6, -15, -1, 13, { notice: true }); shop('z', 1.2, -14.6, -12, -1, 11);
   shop('z', 1.2, -8.2, -5.6, -1, 2); shop('z', 1.2, -4.8, -2.2, -1, 9); shop('z', 1.2, -1.4, 1.2, -1, 7); shop('z', 1.2, 3.0, 5.6, -1, 14, { notice: true }); shop('z', 1.2, 6.4, 8.6, -1, 12);
@@ -5082,6 +5269,7 @@ function buildZone6() {
   B.decal('crack', Signs.crack, [-2, CH - 0.004, -10], '-y', 1.6, 1.6);
   B.trigger({ x0: -11.2, x1: -8.8, z0: 0, z1: 2.2 }, () => Scares.phoneStart([-10.7, 1.2, 6.85]), { id: 'z6phone' });
   B.trigger({ x0: -14, x1: -12, z0: -1.2, z1: 1.2 }, () => { Scares.slam([-17.5, 1.2, -1.3], 0.8); AudioSys.shutterRattle([-17.5, 1.2, -1.3]); }, { id: 'z6slam' });
+  B.trigger({ x0: -10, x1: -8, z0: -1.2, z1: 1.2 }, () => Scares.whenUnseen([-16.3, 1.0, -1.2], () => { setFlag('z6open'); AudioSys.shutterRattle([-16.3, 1.0, -1.2]); Sanity.scare(0.08, 0.2); }), { id: 'z6swap' });
   B.trigger({ x0: 6.6, x1: 9.0, z0: -6.2, z1: -5.0 }, () => Scares.apparition([7.8, 0, -15.4], { stare: 0.5, near: 4, life: 30 }), { id: 'z6fig' });
   // ---------- Sonido ----------
   B.emitter({ type: 'hum', pos: [LX, LY, LZ], gain: 0.05, group: 'lamp', sizzle: 2.0, harm: [0.7, 0.5, 0.3, 0.2] });
@@ -5531,6 +5719,10 @@ const Hud = {
     const b = Flashlight.battery, show = Flashlight.on || b < 25;
     if (show !== this.batShown) { this.batShown = show; $('batt').classList.toggle('on', show); }
     if (show) { const s = $('battFill'); s.style.width = b.toFixed(0) + '%'; s.classList.toggle('low', b < 15); }
+    // aguante: solo se ve mientras no está lleno
+    const st = Player.stamina, sv = st < 0.98;
+    if (sv !== this.stamShown) { this.stamShown = sv; $('stam').classList.toggle('on', sv); }
+    if (sv) { const s = $('stamFill'); s.style.width = (st * 100).toFixed(0) + '%'; s.classList.toggle('low', Player.tired); }
   },
 };
 // ==== src/game/loop.js ====

@@ -16,8 +16,8 @@ function saveSettings() { try { localStorage.setItem(SETTINGS_KEY, JSON.stringif
 // Calidad: resolución interna, MSAA, luces reales, post-procesado, distancia de dibujo, audio, sombras de la linterna
 const QUALITY = {
   low:    { scale: 0.6,  samples: 0, realLights: 1, ca: false, hrtf: false, far: 45,  fog: 1.2,  irMax: 2.2 },
-  medium: { scale: 0.8,  samples: 0, realLights: 2, ca: true,  hrtf: true,  far: 70,  fog: 1.0,  irMax: 3.5 },
-  high:   { scale: 1.0,  samples: 4, realLights: 3, ca: true,  hrtf: true,  far: 100, fog: 0.9,  irMax: 5.0, shadows: true },
+  medium: { scale: 0.8,  samples: 0, realLights: 2, ca: true,  hrtf: true,  far: 70,  fog: 1.0,  irMax: 3.5, bloom: true, cone: true },
+  high:   { scale: 1.0,  samples: 4, realLights: 3, ca: true,  hrtf: true,  far: 100, fog: 0.9,  irMax: 5.0, shadows: true, bloom: true, cone: true },
 };
 let Q = QUALITY.medium;
 

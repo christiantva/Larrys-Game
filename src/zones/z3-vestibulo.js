@@ -197,6 +197,8 @@ function buildZone3() {
   B.decal('crack', Signs.crack, [0, 0.004, 5.5], '+y', 2.0, 2.0);
   // al cruzar los torniquetes: apagón, y al volver la luz hay alguien en la escalera
   B.trigger({ x0: 8.2, x1: 10.2, z0: -4, z1: 4 }, (z) => Scares.blackout(4.2, () => { const g = z.groundTop(12.8, 0); Scares.apparition([12.8, g ? g.y : -1.2, 0.2], { stare: 0.35, near: 3, life: 20 }); }), { id: 'z3black', cond: { flag: 'gate', state: true } });
+  // 2º acto: el pasillo desde la escalera se repite (parpadeas y vuelves a estar atrás)
+  B.when('act2', true, () => B.trigger({ x0: -16.9, x1: -15.1, z0: -CW, z1: CW }, () => Scares.corridorLoop(5.6)));
   B.when('act2', true, () => B.trigger({ x0: -14, x1: -10, z0: -1.5, z1: 1.5 }, () => { Hud.sub('«まもなく…終点です»', 3); AudioSys.whisper(null, 0.3); }, { id: 'z3wh' }));
   // ---------- Sonido ----------
   B.emitter({ type: 'hum', pos: [-11.2, CH - 0.1, 2.4], gain: 0.045, group: 'ent' });

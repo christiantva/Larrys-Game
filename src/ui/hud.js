@@ -30,5 +30,9 @@ const Hud = {
     const b = Flashlight.battery, show = Flashlight.on || b < 25;
     if (show !== this.batShown) { this.batShown = show; $('batt').classList.toggle('on', show); }
     if (show) { const s = $('battFill'); s.style.width = b.toFixed(0) + '%'; s.classList.toggle('low', b < 15); }
+    // aguante: solo se ve mientras no está lleno
+    const st = Player.stamina, sv = st < 0.98;
+    if (sv !== this.stamShown) { this.stamShown = sv; $('stam').classList.toggle('on', sv); }
+    if (sv) { const s = $('stamFill'); s.style.width = (st * 100).toFixed(0) + '%'; s.classList.toggle('low', Player.tired); }
   },
 };

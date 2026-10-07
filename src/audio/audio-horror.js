@@ -162,3 +162,35 @@ Object.assign(AudioSys, {
   },
   gateOpen(pos) { if (!this.ready) return; const d = this.at(pos, 0.6), t = this.ctx.currentTime + 0.02; this.tone(d, t, 1760, 0.04, 0.004, 0.1, 'square'); this.thumpTo(d, t + 0.15, 120, 0.3); this.metalHit(d, t + 0.18, 0.12, 700); },
 });
+Object.assign(AudioSys, {
+  // Respiración del jugador: inspiración + espiración con ruido filtrado (más fuerte y rápida al cansarse)
+  breath(k, quiet) {
+    if (!this.ready) return; const d = this.tmp(1, 0.05, 4000), t = this.ctx.currentTime + 0.02, v = (0.05 + 0.13 * k) * (quiet ? 0.6 : 1);
+    const inD = lerp(0.9, 0.35, k), outD = lerp(1.1, 0.45, k);
+    this.noiseBurst(d, t, 'bandpass', rand(1100, 1500), 1.1, v * 0.7, inD * 0.6, inD * 0.4, 'pink');
+    this.noiseBurst(d, t + inD + 0.05, 'bandpass', rand(700, 950), 0.9, v, outD * 0.3, outD * 0.7, 'pink');
+  },
+  // Chasquido de estática (imágenes subliminales)
+  staticBurst(v = 0.3) {
+    if (!this.ready) return; const d = this.tmp(1, 0.3), t = this.ctx.currentTime + 0.005;
+    this.noiseBurst(d, t, 'highpass', 1500, 0.7, v, 0.003, 0.18); this.tone(d, t, 60, v * 0.6, 0.003, 0.25, 'square', 40);
+  },
+  // Megafonía distorsionada: carillón + voz que no se entiende, con mucha reverberación
+  announce() {
+    if (!this.ready) return; const c = this.ctx, t = c.currentTime + 0.05, d = this.tmp(1, 1.2, 12000);
+    [784, 659, 523].forEach((f, i) => this.tone(d, t + i * 0.42, f, 0.05, 0.01, 1.2));
+    const t0 = t + 1.7, dur = rand(3.2, 4.5);
+    const o = c.createOscillator(); o.type = 'sawtooth'; o.frequency.setValueAtTime(rand(105, 130), t0);
+    const vib = c.createOscillator(), vg = this.gain(6); vib.frequency.value = 5; vib.connect(vg); vg.connect(o.frequency);
+    const f1 = this.filt('bandpass', 600, 5), f2 = this.filt('bandpass', 1500, 6), hp = this.filt('highpass', 350), lp = this.filt('lowpass', 3000), g = this.gain(0);
+    o.connect(f1); o.connect(f2); f1.connect(hp); f2.connect(hp); hp.connect(lp); lp.connect(g); g.connect(d);
+    const n = Math.round(dur / 0.16);
+    for (let i = 0; i < n; i++) {
+      const tt = t0 + (i / n) * dur; f1.frequency.setValueAtTime(rand(300, 850), tt); f2.frequency.setValueAtTime(rand(900, 2400), tt);
+      o.frequency.setTargetAtTime(rand(95, 140) * (i > n * 0.7 ? 0.8 : 1), tt, 0.05);       // la voz se hunde al final
+      g.gain.setValueAtTime(rand(0.06, 0.16), tt); g.gain.setValueAtTime(rand(0, 0.03), tt + dur / n * 0.8);
+    }
+    g.gain.setValueAtTime(0, t0 + dur); o.start(t0); vib.start(t0); o.stop(t0 + dur + 0.1); vib.stop(t0 + dur + 0.1);
+    this.noiseBurst(d, t0, 'bandpass', 2500, 0.6, 0.012, 0.2, dur, 'white');
+  },
+});

@@ -8,6 +8,8 @@ const CONFIG = {
   WALK_SPEED: 1.45,        // m/s caminando
   RUN_SPEED: 2.9,          // m/s corriendo (Shift)
   CROUCH_SPEED: 0.75,      // m/s agachado (C)
+  RUN_TIME: 7,             // segundos que aguantas corriendo
+  RUN_RECOVER: 9,          // segundos para recuperar el aliento del todo
   STAIR_SPEED: 0.62,       // multiplicador de velocidad en escaleras
   EYE_HEIGHT: 1.6,         // altura de los ojos de pie
   CROUCH_EYE: 1.0,         // altura de los ojos agachado

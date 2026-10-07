@@ -24,16 +24,17 @@ const Scares = {
     // con sombras activas, la silueta proyecta su forma con la linterna
     this.mesh.castShadow = true; this.mesh.customDepthMaterial = new THREE.MeshDepthMaterial({ depthPacking: THREE.RGBADepthPacking, map: t, alphaTest: 0.45 });
   },
-  reset(done) { this.done = done ? { ...done } : {}; this.clear(); },
+  reset(done) { this.done = done ? { ...done } : {}; this.loops = 0; this.clear(); },
   // Corta todo lo que esté en marcha (al cambiar de zona o salir al menú)
   clear() {
-    if (this.mesh) this.mesh.visible = false; this.fig = null; this.seqs = [];
+    if (this.mesh) this.mesh.visible = false; this.fig = null; this.seqs = []; this.unseen = [];
     if (this.phone) { this.phone.stop(); this.phone = null; }
     if (this.pw) { this.pw = null; Power.k = 1; AudioSys.duck(1, 0.5); }
   },
   // Línea de tiempo propia (se congela en pausa, a diferencia de setTimeout)
   after(sec, fn) { this.seqs.push({ t: sec, fn }); },
   update(dt, cam) {
+    this.checkUnseen(cam);
     for (let i = this.seqs.length - 1; i >= 0; i--) { const s = this.seqs[i]; s.t -= dt; if (s.t <= 0) { this.seqs.splice(i, 1); s.fn(); } }
     if (this.pw) {                     // animación de la corriente (apagones)
       const p = this.pw; Power.k += (p.to - Power.k) * (1 - Math.exp(-p.speed * dt));
@@ -45,7 +46,7 @@ const Scares = {
     _toF.subVectors(M.position, cam.position); const dist = _toF.length(); _toF.divideScalar(dist || 1);
     _fw.set(0, 0, -1).applyQuaternion(cam.quaternion);
     const look = _fw.dot(_toF), lit = Flashlight.level > 0.5 && Flashlight.dir.dot(_toF) > 0.95 && dist < 14;
-    if ((look > 0.975 && dist < 24) || lit) f.seen += dt * (lit ? 3 : 1);
+    if ((look > f.lookCos && dist < 24) || lit) f.seen += dt * (lit ? 3 : 1);
     f.life -= dt;
     if (f.seen > f.stare || dist < f.near) this.gone(true);
     else if (f.life <= 0) this.gone(false);
@@ -53,13 +54,41 @@ const Scares = {
   // Silueta inmóvil en 'p' (pies). Desaparece si la miras fijamente, la alumbras o te acercas
   apparition(p, o = {}) {
     if (!this.mesh) return;
-    this.fig = { p: new THREE.Vector3(p[0], p[1], p[2]), seen: 0, stare: o.stare ?? 0.4, near: o.near ?? 3.2, life: o.life ?? 30, scare: o.scare ?? 0.2, quiet: !!o.quiet, onGone: o.onGone || null };
+    this.fig = { p: new THREE.Vector3(p[0], p[1], p[2]), seen: 0, lookCos: o.lookCos ?? 0.975, stare: o.stare ?? 0.4, near: o.near ?? 3.2, life: o.life ?? 30, scare: o.scare ?? 0.2, quiet: !!o.quiet, onGone: o.onGone || null };
     this.mesh.visible = true;
   },
   gone(seen) {
     const f = this.fig; if (!f) return; this.fig = null; this.mesh.visible = false;
     if (seen && !f.quiet) { AudioSys.vanish([f.p.x, f.p.y + 1.5, f.p.z]); Sanity.scare(f.scare, 0.5); }
     if (f.onGone) f.onGone(seen);
+  },
+  // Presencia periférica: una figura en el límite de la visión que se esfuma al mirarla
+  peripheral() {
+    const z = Zones.current, p = Player.pos;
+    for (let k = 0; k < 8; k++) {
+      const side = Math.random() < 0.5 ? -1 : 1, a = Player.yaw + side * rand(0.85, 1.05), r = rand(5, 10);
+      const x = p.x - Math.sin(a) * r, zz = p.z - Math.cos(a) * r, g = z.groundTop(x, zz);
+      if (g && Math.abs(g.y - p.y) < 1.2) { this.apparition([x, g.y, zz], { lookCos: 0.88, stare: 0.02, near: 3.5, life: rand(4, 8), quiet: true }); return; }
+    }
+  },
+  // Ejecuta fn cuando el punto p quede fuera de la vista (cosas que cambian cuando no miras)
+  whenUnseen(p, fn) { this.unseen = this.unseen || []; this.unseen.push({ p, fn }); },
+  checkUnseen(cam) {
+    if (!this.unseen || !this.unseen.length) return;
+    _fw.set(0, 0, -1).applyQuaternion(cam.quaternion);
+    for (let i = this.unseen.length - 1; i >= 0; i--) {
+      const u = this.unseen[i]; _toF.set(u.p[0] - cam.position.x, u.p[1] - cam.position.y, u.p[2] - cam.position.z); const d = _toF.length();
+      if (d > 2.5 && _fw.dot(_toF.divideScalar(d)) < 0.15) { this.unseen.splice(i, 1); u.fn(); }
+    }
+  },
+  // Pasillo que se repite: tres vueltas, cada una peor
+  corridorLoop(len) {
+    if (this.done.z3loop) return;
+    this.loops = (this.loops || 0) + 1;
+    Sanity.doBlink(); Player.pos.x -= len; Player.camY = Player.pos.y + Player.eye; AudioSys.staticBurst(0.1);
+    if (this.loops === 1) this.after(0.6, () => Hud.sub('…¿no acabo de pasar por aquí?', 3));
+    else if (this.loops === 2) { this.after(0.4, () => { Hud.sub('«…otra vez…»', 3); AudioSys.whisper(null, 0.45, 1.8); }); Sanity.scare(0.12, 0.3); }
+    else { this.done.z3loop = true; this.after(0.3, () => this.blackout(3.5, () => this.steps(6, 'marble', 0.42))); }
   },
   // Visión fugaz delante del jugador (tensión al límite)
   glimpse() {

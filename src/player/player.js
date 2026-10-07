@@ -5,7 +5,9 @@ const Player = {
   pos: new THREE.Vector3(), vel: new THREE.Vector3(), yaw: 0, pitch: 0,
   eye: CONFIG.EYE_HEIGHT, crouch: false, camY: 0, surface: 'tile', stair: null,
   stepAcc: 0, stepCount: 0, bobAmp: 0, lastY: 0, moving: false,
+  stamina: 1, tired: false, breathT: 2, exert: 0,   // aguante al correr y respiración
   place(sp, zone) {
+    this.stamina = 1; this.tired = false; this.exert = 0;
     const g = zone.groundTop(sp.x, sp.z) || { y: 0 };
     this.pos.set(sp.x, g.y, sp.z); this.yaw = sp.yaw; this.pitch = sp.pitch || 0; this.vel.set(0, 0, 0);
     this.camY = g.y + this.eye; this.lastY = g.y; this.stepAcc = 0; this.bobAmp = 0;
@@ -39,7 +41,15 @@ const Player = {
     if (Input.down('KeyA') || Input.down('ArrowLeft')) s -= 1;
     let mag = 1;
     if (Touch.ax || Touch.ay) { f = -Touch.ay; s = Touch.ax; mag = Math.min(1, Math.hypot(f, s)); }   // joystick analógico
-    const running = (Input.down('ShiftLeft') || Input.down('ShiftRight') || (Touch.run && mag > 0.5)) && !this.crouch && f > 0.2;
+    const wantRun = (Input.down('ShiftLeft') || Input.down('ShiftRight') || (Touch.run && mag > 0.5)) && !this.crouch && f > 0.2;
+    // aguante: correr cansa; agotado no puedes correr hasta recuperar el aliento
+    if (this.stamina <= 0.01) this.tired = true; else if (this.stamina > 0.35) this.tired = false;
+    const running = wantRun && !this.tired;
+    this.stamina = clamp(this.stamina + (running ? -dt / CONFIG.RUN_TIME : dt / CONFIG.RUN_RECOVER * (1 - Sanity.t * 0.5)), 0, 1);
+    this.exert = clamp(this.exert + (running ? dt * 0.25 : -dt * 0.08), 0, 1);
+    this.breathT -= dt;
+    const pant = Math.max(this.exert, 1 - this.stamina, Sanity.vis * 0.8);
+    if (this.breathT <= 0) { this.breathT = lerp(3.6, 0.85, pant); if (pant > 0.25) AudioSys.breath(pant, this.crouch); }
     const sy = Math.sin(this.yaw), cy = Math.cos(this.yaw);
     let wx = -sy * f + cy * s, wz = -cy * f - sy * s; const wl = Math.hypot(wx, wz); if (wl > 0) { wx /= wl; wz /= wl; }
     let speed = this.crouch ? CONFIG.CROUCH_SPEED : running ? CONFIG.RUN_SPEED : CONFIG.WALK_SPEED;
@@ -70,6 +80,7 @@ const Player = {
         this.stepAcc -= stepLen; this.stepCount++;
         const dy = this.pos.y - this.lastY; this.lastY = this.pos.y;
         AudioSys.footstep(this.surface, { run: running, crouch: this.crouch, stairs: this.stair ? (dy < -0.02 ? 'down' : 'up') : null });
+        Sanity.onStep(this.surface);
       }
     } else if (this.stepAcc > stepLen * 0.45 && sp < 0.08) { // paso final al detenerse
       this.stepAcc = 0; this.stepCount++; AudioSys.footstep(this.surface, { crouch: this.crouch, run: false });
