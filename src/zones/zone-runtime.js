@@ -1,6 +1,15 @@
 /* =====================================================================
    ZONA en ejecución — activar/desactivar, parpadeos, reflejos, sonido
    ===================================================================== */
+// Corriente general (apagones): escala la luz horneada, los tubos, los halos y las luces reales
+const Power = {
+  k: 1,
+  apply(zone) {
+    const k = this.k; BakeK.value = lerp(0.03, 1, k); GlowMat.uniforms.uK.value = lerp(0.02, 1, k); TubeMat.color.setScalar(lerp(0.03, 1, k));
+    if (zone) World.hemi.intensity = zone.hemi.I * lerp(0.35, 1, k);
+    for (const L of World.lights) L.intensity = (L.userData.base || 0) * (L.userData.lv ?? 1) * k;
+  },
+};
 const _m4 = new THREE.Matrix4(), _q = new THREE.Quaternion(), _qx = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), 0);
 const _v = new THREE.Vector3(), _s = new THREE.Vector3(), _c = new THREE.Color(), _yAxis = new THREE.Vector3(0, 1, 0);
 class Zone {
@@ -12,6 +21,8 @@ class Zone {
     this.matKeys = ctx.matKeys; this.variants = this.group.children.filter((o) => o.userData.cond);
     this.tubeMesh = fx.tubeMesh; this.glowGeo = fx.glowGeo; this.glintMesh = fx.glintMesh;
     this.emitters = []; this.active = false; this.flicks = [];
+    this.triggers = ctx.triggers; this.sparkles = ctx.sparkles; this.onActivate = ctx.onActivate;
+    const bk = fx.baker; this.lightAt = (p) => bk.at(p, [0, 1, 0]);
     this.nextFlicker = rand(CONFIG.FLICKER_MIN * 0.4, CONFIG.FLICKER_MAX * 0.6);
     for (const g of Object.values(this.groups)) if (g.mode === 'faulty') g.next = rand(3, 9);
   }
@@ -19,7 +30,7 @@ class Zone {
   refreshVariants() { for (const o of this.variants) if (!o.userData.rising) o.visible = condOk(o.userData.cond); }
   // Anima hacia arriba (persiana) la geometría que desaparece al desbloquear 'flag'
   raise(flag) {
-    this.rising = this.variants.filter((o) => o.userData.cond.flag === flag && o.userData.cond.state === false);
+    this.rising = this.variants.filter((o) => { const c = o.userData.cond; return !Array.isArray(c) && c.flag === flag && c.state === false; });
     for (const o of this.rising) o.userData.rising = true; this.riseT = 0;
   }
   activate() {
@@ -32,10 +43,14 @@ class Zone {
       const d = this.real[i];
       if (d) { L.position.set(d.p[0], d.p[1], d.p[2]); L.color.setRGB(d.color[0], d.color[1], d.color[2]); L.intensity = d.I; L.distance = d.range; L.userData.base = d.I; }
       else { L.intensity = 0; L.userData.base = 0; }
+      L.userData.lv = 1;
     });
+    for (const t of this.triggers) t.inside = false;
     this.active = true; this.revCur = null;
     for (const g of Object.values(this.groups)) this.setLevel(g, 1);
     if (AudioSys.ready) this.startAudio();
+    Sparkles.setZone(this);
+    if (this.onActivate) this.onActivate(this);
   }
   deactivate() {
     World.scene.remove(this.group); this.stopAudio(); this.active = false; this.flicks = [];
@@ -59,7 +74,7 @@ class Zone {
       for (const i of g.glows) a.setXYZ(i, b[i * 3] * lv, b[i * 3 + 1] * lv, b[i * 3 + 2] * lv);
       a.needsUpdate = true;
     }
-    if (g.real != null && this.real[g.real]) { const L = World.lights[g.real]; L.intensity = (L.userData.base || 0) * lv; }
+    if (g.real != null && this.real[g.real]) World.lights[g.real].userData.lv = lv;
     for (const m of g.mats) m.mat.color.copy(m.base).multiplyScalar(lerp(0.04, 1, lv));
     for (const i of g.emitters) { const e = this.emitters[i]; if (e) e.setLevel(lv > 0.45 ? Math.min(1, lv * 1.1) : 0, 0.008); }
   }
@@ -100,6 +115,7 @@ class Zone {
     // --- emisores con eventos ---
     for (const e of this.emitters) if (e.update) e.update(dt);
     this.updateReverb(false);
+    Power.apply(this);
   }
   tink(g) { if (!AudioSys.ready) return; for (const i of g.emitters) { const d = this.emitterDefs[i]; if (d && d.pos) AudioSys.tink(d.pos); } }
   updateReverb(force) {

@@ -10,19 +10,20 @@ class ZoneCtx {
     this.owned = { tex: [], mat: [] }; this.deferred = []; this.cond = null; this.matKeys = new Set();
     this.fog = { color: [0.01, 0.012, 0.016], density: 0.05 }; this.ambient = [0.01, 0.01, 0.012];
     this.hemi = { sky: 0x202a38, ground: 0x08090a, I: 0.2 }; this.reverb = 'stairwell';
+    this.triggers = []; this.sparkles = []; this.onActivate = null;
   }
   bt(key) {
     if (typeof key !== 'string') return key; // ya es un lote
-    const k = this.cond ? key + '§' + this.cond.flag + ':' + this.cond.state : key;
+    const k = this.cond ? key + '§' + condKey(this.cond) : key;
     let B = this.batches.get(k);
     if (!B) { const d = MDEF[key]; B = new Batch(d.mat(), d); B.cond = this.cond; this.batches.set(k, B); if (B.mat.userData.key) this.matKeys.add(B.mat.userData.key); }
     return B;
   }
   // Geometría/colisiones/interacciones que solo existen si un atajo está (o no) desbloqueado
-  when(flag, state, fn) { const prev = this.cond; this.cond = { flag, state }; fn(); this.cond = prev; }
+  when(flag, state, fn) { const prev = this.cond, c = { flag, state }; this.cond = prev ? [].concat(prev, c) : c; fn(); this.cond = prev; }
   // Lote propio con clave (para atlas de carteles/pósters compartidos por varios planos)
   ownBatch(key, make) {
-    const k = key + (this.cond ? '§' + this.cond.flag + ':' + this.cond.state : '');
+    const k = key + (this.cond ? '§' + condKey(this.cond) : '');
     let B = this.batches.get(k); if (!B) { B = make(); B.cond = this.cond; this.batches.set(k, B); } return B;
   }
   // --- Superficies básicas ---
@@ -119,14 +120,45 @@ class ZoneCtx {
     }
   }
   // Puerta: con E cambia de zona. flag = atajo requerido; unlock = atajo que desbloquea al usarla
-  door({ box, to, spawn, flag = null, unlock = null, pos, kind = 'door' }) {
+  // item = objeto que la abre (se gasta y activa 'flag'); msg = texto si sigue cerrada
+  door({ box, to, spawn, flag = null, unlock = null, pos, kind = 'door', item = null, msg = null, label = 'Abrir' }) {
     this.interact(box, () => {
-      if ((flag && !Flags[flag]) || !ZONE_DEFS[to]) { if (kind === 'shutter') AudioSys.shutterRattle(pos); else AudioSys.doorRattle(pos); return; }
+      if (flag && !Flags[flag] && item && Inv.has(item)) { Inv.take(item); setFlag(flag); Hud.msg('Usas: ' + ITEMS[item].name); AudioSys.unlock(pos); }
+      if ((flag && !Flags[flag]) || !ZONE_DEFS[to]) { if (kind === 'shutter') AudioSys.shutterRattle(pos); else AudioSys.doorRattle(pos); if (msg) Hud.msg(msg); return; }
       if (unlock) setFlag(unlock);
       AudioSys.doorOpen(pos, kind);
       Game.transition(to, spawn, kind === 'shutter' ? 1.4 : 0.35);
-    });
+    }, label);
   }
+  // Objeto recogible: su geometría existe hasta recogerlo (atajo 'got_<id>'), con un destello sutil
+  pickup({ id, item, n = 1, p, box, build, label, msg, onTake }) {
+    const flag = 'got_' + id;
+    box = box || { x0: p[0] - 0.25, x1: p[0] + 0.25, y0: p[1] - 0.2, y1: p[1] + 0.25, z0: p[2] - 0.25, z1: p[2] + 0.25 };
+    this.when(flag, false, () => {
+      if (build) build(this);
+      this.interact(box, () => { setFlag(flag); Inv.add(item, n); AudioSys.pickup(); if (msg) Hud.msg(msg, 4); if (onTake) onTake(); }, label || 'Recoger');
+    });
+    this.sparkles.push({ p, cond: this.cond ? [].concat(this.cond, { flag, state: false }) : { flag, state: false } });
+  }
+  // Nota legible (se puede releer); el destello desaparece al leerla
+  note({ id, p, facing = '+y', w = 0.21, h = 0.27, box, label = 'Leer' }) {
+    this.poster(Signs.paper, p, facing, w, h, { key: 'paper', alpha: true, uv: [(NOTE_IDS.indexOf(id) % 4) / 4, 0, (NOTE_IDS.indexOf(id) % 4 + 1) / 4, 1], off: 0.008 });
+    box = box || { x0: p[0] - 0.3, x1: p[0] + 0.3, y0: p[1] - 0.25, y1: p[1] + 0.25, z0: p[2] - 0.3, z1: p[2] + 0.3 };
+    this.interact(box, () => Notes.read(id), label);
+    this.sparkles.push({ p, cond: this.cond ? [].concat(this.cond, { flag: 'note_' + id, state: false }) : { flag: 'note_' + id, state: false } });
+  }
+  // Calcomanía (suciedad, pintadas, grietas, cinta): transparente, sin escribir profundidad
+  decal(key, cv, c, facing, w, h, o = {}) {
+    const B = this.ownBatch('D:' + key, () => {
+      const t = toTex(typeof cv === 'function' ? cv() : cv, { repeat: false }); this.owned.tex.push(t);
+      const m = new THREE.MeshLambertMaterial({ map: t, vertexColors: true, transparent: true, depthWrite: false, alphaTest: 0.01, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -4 });
+      m.onBeforeCompile = bakePatch; this.owned.mat.push(m);
+      return new Batch(m, { seg: 0.5, order: 2 });
+    });
+    this.placeQuad(B, c, facing, w, h, { off: 0.004, ...o });
+  }
+  // Volumen que dispara algo al entrar. o.id: solo una vez por partida (se guarda)
+  trigger(box, fn, o = {}) { this.triggers.push({ box, fn, id: o.id || null, cond: o.cond !== undefined ? o.cond : this.cond, inside: false }); }
   // --- Escaleras: peldaños visibles + rampa invisible para caminar ---
   stairs({ axis, sTop, sBot, w0, w1, yTop, yBot, n, surface = 'stair', tread = 'tread', riser = 'riser' }) {
     const d = Math.sign(sBot - sTop), L = Math.abs(sBot - sTop), t = L / n, r = (yTop - yBot) / n;
@@ -153,7 +185,7 @@ class ZoneCtx {
   collider(x0, x1, z0, z1, y0 = -100, y1 = 100) { this.colliders.push({ x0, x1, z0, z1, y0, y1, cond: this.cond }); }
   occluder(x0, x1, y0, y1, z0, z1) { this.occ.push({ x0, x1, y0, y1, z0, z1 }); }
   portal(box, to, spawn) { this.portals.push({ box, to, spawn, cond: this.cond }); }
-  interact(box, action) { this.inter.push({ box, action, cond: this.cond }); }
+  interact(box, action, label = null) { this.inter.push({ box, action, cond: this.cond, label }); }
   spawn(name, x, z, yaw, pitch = 0) { this.spawns[name] = { x, z, yaw, pitch }; }
   emitter(def) { this.emitters.push(def); if (def.group) this.grp(def.group).emitters.push(this.emitters.length - 1); }
   reverbArea(box, preset) { this.revAreas.push({ box, preset }); }
@@ -252,7 +284,7 @@ class ZoneCtx {
       this.group.add(glintMesh);
     }
     this.group.updateMatrixWorld(true);
-    return new Zone(this, realActive, { tubeMesh, glowGeo, glintMesh });
+    return new Zone(this, realActive, { tubeMesh, glowGeo, glintMesh, baker });
   }
 }
 

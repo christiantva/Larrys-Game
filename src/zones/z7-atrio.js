@@ -60,15 +60,21 @@ function buildZone7() {
     b.box(-0.22, 0.43, -0.22, 0.22, 0.49, 0.22); b.box(0.17, 0.49, -0.22, 0.23, 0.92, 0.22);
     for (const [x, z] of [[-0.19, -0.19], [0.19, -0.19], [-0.19, 0.19], [0.19, 0.19]]) b.box(x - 0.015, 0, z - 0.015, x + 0.015, 0.43, z + 0.015);
   };
-  const chairs = [], R2 = mulberry32(707);
+  const chairs = [], turned = [], R2 = mulberry32(707);
   for (let r = 0; r < 4; r++) for (let c = 0; c < 9; c++) {
     const x = -4.2 - r * 0.95, z = -3.2 + c * 0.8; if (r === 3 && c === 6) continue;   // falta una silla
     chairs.push(new THREE.Matrix4().makeRotationY((R2() - 0.5) * 0.12).setPosition(x + (R2() - 0.5) * 0.06, 0, z));
+    turned.push(new THREE.Matrix4().makeRotationY(PI + (R2() - 0.5) * 0.08).setPosition(x, 0, z));      // 2º acto: miran hacia ti
   }
-  B.instanced('seatGrey', chair, chairs);
+  B.when('act2', false, () => B.instanced('seatGrey', chair, chairs));
+  B.when('act2', true, () => B.instanced('seatGrey', chair, turned));
   for (let r = 0; r < 4; r++) B.collider(-4.45 - r * 0.95, -3.95 - r * 0.95, -3.5, 3.5);
   B.poster(Signs.banner(), [-RA + 0.12, 2.5, 0], '+x', 1.6, 3.2, { off: 0.02 });
   B.box('woodBrown', -11.8, 0, -0.5, -11.2, 1.1, 0.5); B.collider(-11.85, -11.15, -0.55, 0.55);
+  // atril: el diario del revisor y su tenaza
+  B.note({ id: 'n7', p: [-11.5, 1.105, 0.25], box: { x0: -11.85, x1: -11.15, y0: 0.9, y1: 1.4, z0: 0.02, z1: 0.5 } });
+  B.pickup({ id: 'punch', item: 'punch', p: [-11.5, 1.12, -0.25], box: { x0: -11.85, x1: -11.15, y0: 0.9, y1: 1.4, z0: -0.5, z1: -0.02 },
+    build: (b) => punchProp(b, -11.5, 1.1, -0.25), label: 'Coger la tenaza', onTake: () => Scares.after(1.2, punchTicket) });
   // caballetes con pósters (exposición)
   for (let k = 0; k < 5; k++) {
     const a = PI * 0.62 + k * 0.17, p = P(9.2, a, 0), yaw = Math.atan2(-p[0], -p[2]), fx = Math.sin(yaw), fz = Math.cos(yaw);
@@ -92,7 +98,7 @@ function buildZone7() {
   B.box('steel', -0.8, 0, -RA + 0.25, 0.8, 2.2, -RA + 0.32, { seg: 0.6 });
   B.box('grey', -0.86, 2.2, -RA + 0.2, 0.86, 2.28, -RA + 0.36); B.cyl('metal', [-0.5, 1.0, -RA + 0.36], [0.5, 1.0, -RA + 0.36], 0.02, 6);
   B.glowSign(Signs.exitSign(), [0, 2.55, -RA + 0.3], '+z', 0.56, 0.28, 1.4, { off: 0.01 });
-  B.door({ box: { x0: -0.85, x1: 0.85, y0: 0, y1: 2.2, z0: -RA + 0.1, z1: -RA + 0.45 }, to: 'z1', spawn: 'steelDoor', unlock: 'steel', pos: [0, 1, -RA + 0.4] });
+  B.door({ box: { x0: -0.85, x1: 0.85, y0: 0, y1: 2.2, z0: -RA + 0.1, z1: -RA + 0.45 }, to: 'z1', spawn: 'steelDoor', unlock: 'steel', pos: [0, 1, -RA + 0.4], label: 'Salida de emergencia' });
   // luces reales: luna cenital, verde de emergencia, cálida sobre la exposición
   B.realDefs[0] = { p: [0, 12, 0], color: lin(0x9ab4ff), I: 70, range: 34, group: null, bake: { p: [0, 12, 0], color: lin(0x9ab4ff), I: 70, range: 34, dir: [0, -1, 0], dmin: 0.3 } };
   B.realDefs[1] = { p: [0, 2.4, -RA + 0.9], color: lin(0x30ff90), I: 1.6, range: 6, group: null, bake: { p: [0, 2.4, -RA + 0.9], color: lin(0x30ff90), I: 1.6, range: 6, dir: [0, -0.3, 1], dmin: 0.2 } };
@@ -106,6 +112,11 @@ function buildZone7() {
   B.emitter({ type: 'creak', pos: [6, 8, -6], gain: 0.15, min: 20, max: 45 });
   B.emitter({ type: 'rumble', gain: 0.12, first: 40 });
   B.emitter({ type: 'roomtone', gain: 0.05, f: 160 });
+  // ---------- Objetos y sustos ----------
+  B.pickup({ id: 'bat7', item: 'battery', p: [-5.15, 0.5, 0.8], build: (b) => batteryProp(b, -5.15, 0.49, 0.8, 0.3) });
+  B.decal('grime', Signs.grime, [0, 1.6, -RA + 0.32], '+z', 3.0, 3.0, { off: 0.01 });
+  B.decal('crack', Signs.crack, [4, 0.004, 4], '+y', 2.2, 2.2);
+  B.trigger({ x0: -1.6, x1: 1.6, z0: 10.5, z1: 12.5 }, () => Scares.apparition([-3.2, H1 + 0.02, -11.9], { stare: 0.7, near: 3, life: 60 }), { id: 'z7fig' });
   B.spawn('fromZ6', 0, 16.4, 0);
   B.spawn('fromZ1', 0, -RA + 1.6, PI);
   B.menuCam = null;

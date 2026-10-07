@@ -88,8 +88,10 @@ const Player = {
     }
     const breathe = Math.sin(time * 1.6) * 0.004;
     const rx = Math.cos(this.yaw), rz = -Math.sin(this.yaw);
-    cam.position.set(this.pos.x + rx * bx, this.camY + by + breathe, this.pos.z + rz * bx);
-    cam.rotation.set(this.pitch + Math.sin(time * 0.8) * 0.002, this.yaw, roll);
+    // temblor de cámara (sustos y tensión alta)
+    const sh = Sanity.shake, sx = sh ? (Math.sin(time * 47) + Math.sin(time * 31.7)) * 0.5 * sh : 0, sy = sh ? (Math.sin(time * 53.3) + Math.sin(time * 27.1)) * 0.5 * sh : 0;
+    cam.position.set(this.pos.x + rx * (bx + sx * 0.02), this.camY + by + breathe + sy * 0.015, this.pos.z + rz * (bx + sx * 0.02));
+    cam.rotation.set(this.pitch + Math.sin(time * 0.8) * 0.002 + sy * 0.012, this.yaw + sx * 0.01, roll + sx * 0.008);
   },
 };
 

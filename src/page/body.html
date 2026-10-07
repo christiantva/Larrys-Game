@@ -2,9 +2,10 @@
 
 <div id="menu" class="screen hidden">
   <div class="title">終電後<small>after the last train</small></div>
-  <button class="m" data-act="start">Iniciar</button>
+  <button class="m hidden" data-act="continue" id="btnContinue">Continuar</button>
+  <button class="m" data-act="start" id="btnStart">Iniciar</button>
   <button class="m" data-act="options">Opciones</button>
-  <div class="foot">usa auriculares<br><span class="desk">WASD + ratón · Shift correr · C agacharse · F linterna · E interactuar · Esc pausa</span><span class="mob">joystick a la izquierda para caminar · arrastra a la derecha para mirar · toca lo que veas para interactuar</span></div>
+  <div class="foot">usa auriculares<br><span class="desk">WASD + ratón · Shift correr · C agacharse · F linterna · R pilas · E interactuar · Tab inventario · Esc pausa</span><span class="mob">joystick a la izquierda para caminar · arrastra a la derecha para mirar · toca lo que veas para interactuar</span></div>
 </div>
 
 <div id="pause" class="screen hidden">
@@ -46,6 +47,7 @@
 <!-- Controles táctiles (solo en móvil) -->
 <div id="touch" class="hidden">
   <div id="joy"><div id="knob"></div></div>
+  <button class="tb" id="tbInv" aria-label="Inventario"><svg viewBox="0 0 24 24"><path d="M6 8h12l-1 12H7z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg></button>
   <button class="tb" id="tbPause" aria-label="Pausa"><svg viewBox="0 0 24 24"><path d="M9 6v12M15 6v12"/></svg></button>
   <button class="tb" id="tbRun" aria-label="Correr"><svg viewBox="0 0 24 24"><path d="M6 7l5 5-5 5M13 7l5 5-5 5"/></svg></button>
   <button class="tb" id="tbCrouch" aria-label="Agacharse"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6M6 18h12"/></svg></button>

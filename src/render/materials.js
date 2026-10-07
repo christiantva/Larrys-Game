@@ -4,12 +4,15 @@
 // Parche de shader: el color de vértice (luz horneada) se suma como emisión
 // multiplicada por el albedo. Así hay decenas de fluorescentes "gratis" y las
 // 3 luces reales + la linterna siguen iluminando encima.
+// BakeK escala toda la luz horneada a la vez (apagones: solo queda la linterna y las luces reales)
+const BakeK = { value: 1 };
 function bakePatch(shader) {
-  shader.fragmentShader = shader.fragmentShader
+  shader.uniforms.uBake = BakeK;
+  shader.fragmentShader = 'uniform float uBake;\n' + shader.fragmentShader
     .replace('#include <color_fragment>', '')
     .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
 #if defined( USE_COLOR ) || defined( USE_INSTANCING_COLOR )
-  totalEmissiveRadiance += diffuseColor.rgb * vColor;
+  totalEmissiveRadiance += diffuseColor.rgb * vColor * uBake;
 #endif`);
 }
 const MATS = {};

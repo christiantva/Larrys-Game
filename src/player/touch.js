@@ -12,7 +12,7 @@ const Touch = {
     const place = (x, y) => { joy.style.left = x + 'px'; joy.style.top = y + 'px'; };
     this.resetJoy = () => { place(Math.max(90, innerWidth * 0.15), innerHeight - Math.max(95, innerHeight * 0.26)); joy.classList.remove('on'); knob.style.transform = ''; this.ax = this.ay = 0; };
     L.addEventListener('pointerdown', (e) => {
-      if (Game.state !== 'playing') return;
+      if (Game.state !== 'playing' || Game.ui) return;
       e.preventDefault();
       if (e.clientX < innerWidth * 0.42 && !this.joy) { this.joy = { id: e.pointerId, x0: e.clientX, y0: e.clientY }; place(e.clientX, e.clientY); joy.classList.add('on'); }
       else if (!this.look) this.look = { id: e.pointerId, x: e.clientX, y: e.clientY, x0: e.clientX, y0: e.clientY, t0: performance.now() };
@@ -46,6 +46,7 @@ const Touch = {
     btn('tbCrouch', () => Player.toggleCrouch());
     btn('tbRun', () => { this.run = !this.run; });
     btn('tbPause', () => Game.pause());
+    btn('tbInv', () => Inventory.show());
     this.resetJoy();
     addEventListener('resize', () => { this.resetJoy(); });
   },

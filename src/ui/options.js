@@ -10,7 +10,9 @@ function syncOptionsUI() {
 function bindUI() {
   document.querySelectorAll('[data-act]').forEach((b) => b.addEventListener('click', (e) => {
     e.stopPropagation(); const a = b.dataset.act;
-    if (a === 'start') Game.start();
+    if (a === 'start') Game.start(false);
+    else if (a === 'continue') Game.start(true);
+    else if (a === 'endMenu') Ending.toMenu();
     else if (a === 'options') Game.openOptions(Game.state === 'paused' ? 'pause' : 'menu');
     else if (a === 'back') Game.closeOptions();
     else if (a === 'resume') Game.resume();

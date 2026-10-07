@@ -24,11 +24,21 @@ function buildZone4() {
   const UNIT = 4.0; let u = 0;
   for (let x = X0 + 0.5; x + UNIT <= X1 - 0.2; x += UNIT, u++) {
     B.box('psdBeige', x, 0, ZP, x + 1.0, 2.0, ZP + 0.18, { skip: ['ny'] });
-    for (const [a, b] of [[x + 1.0, x + 2.1], [x + 2.1, x + 3.2]]) {
-      B.box('psdWhite', a + 0.015, 0, ZP + 0.03, b - 0.015, 1.95, ZP + 0.15, { skip: ['ny'] });
-      B.box('glassDark', a + 0.2, 0.95, ZP + 0.024, b - 0.2, 1.75, ZP + 0.03, { skip: ['ny', 'py', 'px', 'nx', 'pz'] });
-      B.box('dark', a + 0.48, 0.15, ZP + 0.024, a + 0.62, 0.9, ZP + 0.03, { skip: ['ny', 'py', 'px', 'nx', 'pz'] });
-    }
+    const leaves = (sh) => { for (const [a, b, s] of [[x + 1.0, x + 2.1, -1], [x + 2.1, x + 3.2, 1]]) {
+      const o = s * sh;
+      B.box('psdWhite', a + 0.015 + o, 0, ZP + 0.03, b - 0.015 + o, 1.95, ZP + 0.15, { skip: ['ny'] });
+      B.box('glassDark', a + 0.2 + o, 0.95, ZP + 0.024, b - 0.2 + o, 1.75, ZP + 0.03, { skip: ['ny', 'py', 'px', 'nx', 'pz'] });
+      B.box('dark', a + 0.48 + o, 0.15, ZP + 0.024, a + 0.62 + o, 0.9, ZP + 0.03, { skip: ['ny', 'py', 'px', 'nx', 'pz'] });
+    } };
+    // unidad 7: la puerta por la que se sube al último tren (final)
+    if (u === 7) {
+      B.when('trainHere', false, () => leaves(0));
+      B.when('trainHere', true, () => {
+        leaves(0.95);
+        B.glowSign(trainInteriorCanvas(), [x + 2.1, 1.0, ZP + 0.33], '-z', 2.1, 2.0, 1.15, { off: 0 });
+        B.interact({ x0: x + 1.0, x1: x + 3.2, y0: 0, y1: 2.0, z0: ZP - 0.3, z1: ZP + 0.3 }, () => Ending.board(), 'Subir al tren');
+      });
+    } else leaves(0);
     B.box('psdWhite', x + 3.2, 0, ZP, x + UNIT, 2.0, ZP + 0.18, { skip: ['ny'] });
     const cell = u % 16, cu = (cell % 4) / 4, cv = 1 - (Math.floor(cell / 4) + 1) / 4;
     B.glowSign(Signs.doorNums, [x + 2.1, 2.14, ZP], '-z', 0.2, 0.2, 1.1, { key: 'dn', uv: [cu, cv, cu + 0.25, cv + 0.25], off: 0.005 });
@@ -66,8 +76,8 @@ function buildZone4() {
   }
   for (const x of [-9, 7]) {
     B.box('dark', x - 1.2, 2.32, -1.06, x + 1.2, 2.78, -0.94);
-    B.glowSign(Signs.platformName, [x, 2.55, -1.06], '-z', 2.36, 0.44, 1.2, { key: 'pn', off: 0.003 });
-    B.glowSign(Signs.platformName, [x, 2.55, -0.94], '+z', 2.36, 0.44, 1.2, { key: 'pn', off: 0.003 });
+    B.when('act2', false, () => { B.glowSign(Signs.platformName, [x, 2.55, -1.06], '-z', 2.36, 0.44, 1.2, { key: 'pn', off: 0.003 }); B.glowSign(Signs.platformName, [x, 2.55, -0.94], '+z', 2.36, 0.44, 1.2, { key: 'pn', off: 0.003 }); });
+    B.when('act2', true, () => { B.glowSign(Signs.platformNameAct2, [x, 2.55, -1.06], '-z', 2.36, 0.44, 1.2, { key: 'pn2', off: 0.003 }); B.glowSign(Signs.platformNameAct2, [x, 2.55, -0.94], '+z', 2.36, 0.44, 1.2, { key: 'pn2', off: 0.003 }); });
     for (const dx of [-1, 1]) B.cyl('metal', [x + dx, 2.78, -1], [x + dx, CH, -1], 0.01, 4);
   }
   for (const x of [-21, -3, 11]) { B.box('grey', x - 0.25, 0, ZW, x + 0.25, 0.9, ZW + 0.35); B.box('dark', x - 0.2, 0.9, ZW + 0.05, x + 0.2, 0.93, ZW + 0.3); B.collider(x - 0.25, x + 0.25, ZW, ZW + 0.35); }
@@ -98,7 +108,21 @@ function buildZone4() {
   B.poster(Signs.maintenance(), [X0 + 0.05, 1.4, -0.4], '+x', 0.9, 0.45, { off: 0.003 });
   B.cyl('metal', [X0 + 0.05, 1.0, 0.05], [X0 + 0.12, 1.0, 0.05], 0.018, 6, { caps: true });
   B.emissiveBox(0xff2a1a, 2.5, X0, 2.2, -0.5, X0 + 0.08, 2.32, -0.3); B.glow([X0 + 0.15, 2.26, -0.4], [0.3, 0.02, 0.01], 0.6);
-  B.door({ box: { x0: X0 - 0.1, x1: X0 + 0.3, y0: 0, y1: 2.0, z0: -1.0, z1: 0.2 }, to: 'z5', spawn: 'fromZ4', pos: [X0 + 0.1, 1, -0.4], kind: 'gate' });
+  B.door({ box: { x0: X0 - 0.1, x1: X0 + 0.3, y0: 0, y1: 2.0, z0: -1.0, z1: 0.2 }, to: 'z5', spawn: 'fromZ4', pos: [X0 + 0.1, 1, -0.4], kind: 'gate',
+    flag: 'maint', item: 'key', msg: 'Cerrada con llave. 関係者以外立入禁止 — solo personal.' });
+  // ---------- Objetos, notas y sustos ----------
+  B.note({ id: 'n4', p: [-12.25, 0.475, ZW + 0.33] });
+  B.pickup({ id: 'bat4', item: 'battery', p: [9.7, 0.01, ZW + 0.95], build: (b) => batteryProp(b, 9.7, 0, ZW + 0.95, 0.7) });
+  B.decal('grime', Signs.grime, [-15, 1.6, ZW], '+z', 2.6, 2.6); B.decal('grime', Signs.grime, [14, 1.3, ZW], '+z', 2.0, 2.0);
+  B.decal('crack', Signs.crack, [-26, 1.8, ZW], '+z', 1.6, 1.6);
+  B.decal('tally', Signs.tally, [-10.6, 1.25, ZW], '+z', 1.0, 0.5);
+  B.decal('hands', Signs.hands, [-22, 1.0, ZP - 0.02], '-z', 1.5, 1.5);
+  // al bajar al andén: alguien espera junto a la puerta de mantenimiento
+  B.trigger({ x0: 12.5, x1: 16.4, z0: ZW, z1: 0.3, y0: -1, y1: 1 }, () => Scares.apparition([X0 + 1.4, 0, -0.4], { stare: 0.5, near: 7, life: 35 }), { id: 'z4fig' });
+  // golpes en las puertas de andén desde el lado de la vía
+  B.trigger({ x0: -9, x1: -5, z0: ZW, z1: ZP }, () => Scares.bang([-7, 1.3, ZP + 0.3]), { id: 'z4bang' });
+  // 2º acto: con el billete perforado llega el último tren
+  B.when('act2', true, () => B.trigger({ x0: X0, x1: 13.5, z0: ZW, z1: ZP, y0: -1, y1: 1 }, () => Ending.arrive()));
   // ---------- Sonido: casi silencio ----------
   for (const r of reals) B.emitter({ type: 'hum', pos: [r.x, CH - 0.25, 1.75], gain: 0.028, group: r.g });
   B.emitter({ type: 'vent', pos: [0, CH, -2], gain: 0.03, ref: 4 });

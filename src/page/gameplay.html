@@ -1,0 +1,46 @@
+<!-- HUD de juego: etiqueta de interacción, mensajes, subtítulos, pila -->
+<div id="hud" class="hidden">
+  <div id="hint"></div>
+  <div id="toasts"></div>
+  <div id="batt"><svg viewBox="0 0 24 24"><path d="M8 4h8l-1 6H9z"/><path d="M9 10h6v10H9z"/></svg><i><s id="battFill"></s></i></div>
+</div>
+<div id="sub"></div>
+
+<!-- Inventario -->
+<div id="inv" class="overlay hidden">
+  <div class="panel">
+    <div class="tabs"><button data-tab="items">objetos</button><button data-tab="notes">notas</button><button class="x" id="invClose" aria-label="Cerrar">✕</button></div>
+    <div class="invBody"><div id="invList"></div><div id="invInfo"></div></div>
+    <div class="keys desk">Tab / Esc para cerrar</div>
+  </div>
+</div>
+
+<!-- Nota -->
+<div id="noteView" class="overlay hidden">
+  <div class="paper">
+    <h2 id="noteTitle"></h2>
+    <div id="noteBody"></div>
+    <button class="m sm" id="noteClose">cerrar</button>
+  </div>
+</div>
+
+<!-- Teclado numérico -->
+<div id="keypad" class="overlay hidden">
+  <div class="kp">
+    <div class="kpHead">暗証番号 · CLAVE</div>
+    <div id="kpDisp">_ _ _ _</div>
+    <div id="kpKeys"></div>
+    <button class="m sm" id="kpClose">cerrar</button>
+  </div>
+</div>
+
+<!-- Final -->
+<div id="ending" class="hidden">
+  <p>Las puertas se cierran detrás de ti.</p>
+  <p>El vagón está vacío. Huele a lluvia y a calefacción.</p>
+  <p>En la pantalla sobre la puerta: <b>次は 終点</b> — próxima: terminal.</p>
+  <p>Te sientas. Apoyas la cabeza contra la ventana.</p>
+  <p class="big">0:42</p>
+  <div class="fin">終電後<small>after the last train · fin</small><span>gracias por jugar — todo el sonido, la luz y las texturas están generados por código</span>
+    <button class="m" data-act="endMenu">Volver al menú</button></div>
+</div>

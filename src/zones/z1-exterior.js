@@ -48,7 +48,9 @@ function buildZone1() {
   // marquesina luminosa
   B.box('white', FX0 - 0.05, 3.2, -3.0, FX1 + 0.05, 3.27, -2.28, { skip: ['ny'] });
   B.ceil('ceilPanel', FX0 - 0.05, FX1 + 0.05, -3.0, -2.28, CY);
-  B.glowSign(Signs.canopy(), [(FX0 + FX1) / 2, (CY + 3.2) / 2, -2.28], '+z', FX1 - FX0 + 0.1, 3.2 - CY, 2.1, { off: 0.001 });
+  // 2º acto: el nombre de la estación ha cambiado
+  B.when('act2', false, () => B.glowSign(Signs.canopy(), [(FX0 + FX1) / 2, (CY + 3.2) / 2, -2.28], '+z', FX1 - FX0 + 0.1, 3.2 - CY, 2.1, { off: 0.001 }));
+  B.when('act2', true, () => B.glowSign(Signs.canopyAct2(), [(FX0 + FX1) / 2, (CY + 3.2) / 2, -2.28], '+z', FX1 - FX0 + 0.1, 3.2 - CY, 2.1, { off: 0.001, key: 'canopy2' }));
   B.emissiveBox(0xf2f4f6, 1.7, FX0 - 0.06, CY, -3.0, FX0 - 0.05, 3.2, -2.28);
   B.emissiveBox(0xf2f4f6, 1.7, FX1 + 0.05, CY, -3.0, FX1 + 0.06, 3.2, -2.28);
   B.bake({ p: [-2.4, 2.95, -2.2], color: lin(0xeef3ff), I: 26, range: 15, tube: { axis: 'x', len: 13.6, step: 1.1 }, dir: [0, -0.35, 0.94], dmin: 0.06 });
@@ -70,7 +72,7 @@ function buildZone1() {
   B.box('grey', 2.4, 2.12, FZ, 3.5, 2.17, FZ + 0.05); B.box('grey', 2.4, 0, FZ, 2.45, 2.12, FZ + 0.05); B.box('grey', 3.45, 0, FZ, 3.5, 2.12, FZ + 0.05);
   B.cyl('metal', [3.28, 1.0, FZ + 0.04], [3.28, 1.0, FZ + 0.1], 0.02, 6, { caps: true }); B.cyl('metal', [3.28, 1.0, FZ + 0.1], [3.15, 1.0, FZ + 0.1], 0.016, 6, { caps: true });
   B.box('steel', 3.75, 0.9, FZ, 4.15, 1.45, FZ + 0.12); // caja eléctrica
-  B.door({ box: { x0: 2.45, x1: 3.45, y0: 0, y1: 2.12, z0: FZ - 0.05, z1: FZ + 0.1 }, to: 'z7', spawn: 'fromZ1', flag: 'steel', pos: [2.95, 1.0, FZ + 0.1] });
+  B.door({ box: { x0: 2.45, x1: 3.45, y0: 0, y1: 2.12, z0: FZ - 0.05, z1: FZ + 0.1 }, to: 'z7', spawn: 'fromZ1', flag: 'steel', pos: [2.95, 1.0, FZ + 0.1], msg: 'Puerta de servicio. Está cerrada por dentro.' });
   // ---------- Rellano superior ----------
   B.floor('floorTile', OX0, OX1, -5.8, FZ, 0);
   B.ground(OX0 - 0.02, OX1, -5.8, FZ + 0.01, 0, 'tile');
@@ -191,7 +193,14 @@ function buildZone1() {
   B.bake({ p: [5.4, 1.1, -1.85], color: lin(0xe6f0ff), I: 4.5, range: 8, dir: [0, 0, 1], dmin: 0.04 });
   B.glow([5.4, 1.2, -2.1], scale3(lin(0xdfeeff), 0.06), 1.8);
   B.glint({ L: [5.4, 1.3, -2.2], fy: 0, color: lin(0xe6f0ff), k: 0.35, size: 0.8, len: 0.8, b: [-24, 24, -2.2, 2.85] });
-  B.collider(VX0, VX1, FZ, VZ1); B.interact({ x0: VX0, x1: VX1, y0: 0.2, y1: 1.8, z0: VZ1 - 0.1, z1: VZ1 + 0.05 }, () => AudioSys.beep([5.4, 1.0, VZ1]));
+  B.collider(VX0, VX1, FZ, VZ1);
+  // la palanca de devolución suelta unas monedas olvidadas (primer objeto)
+  B.interact({ x0: VX0, x1: VX1, y0: 0.2, y1: 1.8, z0: VZ1 - 0.1, z1: VZ1 + 0.05 }, () => {
+    AudioSys.beep([5.4, 1.0, VZ1]);
+    if (Flags.coinsGot) { Hud.msg('La máquina no tiene nada más que darte.'); return; }
+    setFlag('coinsGot'); AudioSys.coins([5.4, 0.3, VZ1]); Hud.msg('Tiras de la palanca de devolución… caen unas monedas.'); Inv.add('coins');
+  }, 'Máquina expendedora');
+  B.sparkles.push({ p: [5.62, 0.42, VZ1 + 0.02], cond: { flag: 'coinsGot', state: false } });
   B.emitter({ type: 'vending', pos: [5.4, 0.9, -2.4], gain: 0.07 });
   for (const [x, t] of [[6.05, 'かん・びん'], [6.55, 'ペットボトル']]) {
     B.box('blue', x, 0, -2.95, x + 0.42, 0.95, -2.5); B.box('dark', x + 0.08, 0.95, -2.85, x + 0.34, 0.97, -2.6);
@@ -223,6 +232,18 @@ function buildZone1() {
     B.poster(Signs.roadClosed(), [x + (x < 0 ? 0.06 : -0.06), 1.35, 1.6], x < 0 ? '+x' : '-x', 0.6, 0.7);
     B.box('grey', x - 0.03, 0, 1.55, x + 0.03, 1.0, 1.65);
   }
+  // ---------- Objetos, notas y eventos ----------
+  B.note({ id: 'n1', p: [0.9, 0.004, 0.2] });
+  B.pickup({ id: 'bat1', item: 'battery', p: [6.27, 0.98, -2.72], build: (b) => batteryProp(b, 6.27, 0.97, -2.72, 0.4), msg: 'Pilas. Ahorra la linterna: sin luz, la estación se te mete en la cabeza.' });
+  B.decal('grime', Signs.grime, [-1.0, 1.0, -5.8], '+z', 2.0, 2.0);
+  for (const y of [0.75, 1.15]) B.decal('tape', Signs.tape, [-10.0, y, -3.05], '+z', 1.2, 0.08);   // callejón precintado
+  // 2º acto: tu propia nota y alguien al otro lado de la calle
+  B.when('act2', true, () => {
+    B.note({ id: 'n8', p: [-0.3, 0.004, -4.0] });
+    B.decal('hands', Signs.hands, [-1.2, 1.3, -5.8], '+z', 1.4, 1.4);
+    B.trigger({ x0: 1.8, x1: 4.2, z0: -2.8, z1: -0.6 }, () => Scares.apparition([13.6, -0.12, 7.6], { stare: 0.7, near: 5, life: 45 }), { id: 'z1fig' });
+    B.trigger({ x0: -1.6, x1: 1.0, z0: -5.4, z1: -3.6 }, () => { Hud.sub('«…ya has estado aquí…»', 3); AudioSys.whisper([-1, 1.6, -5], 0.4); }, { id: 'z1wh' });
+  });
   // ---------- Sonido ----------
   B.emitter({ type: 'city', gain: 0.1 });
   B.emitter({ type: 'hum', pos: [-0.3, 2.6, -4.4], gain: 0.05, group: 'land' });

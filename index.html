@@ -100,6 +100,80 @@
     .opts label.chk { grid-template-columns: 1fr 22px; }
     input[type=range] { width: 92px; }
   }
+/* ---- src/styles/gameplay.css ---- */
+  /* ---------- HUD ---------- */
+  #hud { position: fixed; inset: 0; pointer-events: none; z-index: 6; }
+  #hint { position: fixed; left: 50%; top: calc(50% + 18px); transform: translateX(-50%); font-size: 12px; letter-spacing: .18em; color: rgba(230,236,240,.82);
+    opacity: 0; transition: opacity .2s; white-space: nowrap; text-shadow: 0 0 6px #000; }
+  #hint.on { opacity: 1; }
+  kbd { font: 10px monospace; border: 1px solid rgba(230,236,240,.45); border-radius: 3px; padding: 1px 5px; margin-right: 6px; }
+  #toasts { position: fixed; left: 50%; bottom: 14vh; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .toast { font-size: 13px; letter-spacing: .1em; color: #d9dee2; background: rgba(0,0,0,.55); padding: 7px 16px; opacity: 0; transform: translateY(6px);
+    transition: opacity .5s, transform .5s; display: flex; align-items: center; gap: 10px; max-width: 80vw; text-align: center; }
+  .toast.on { opacity: 1; transform: none; }
+  .toast img { width: 30px; height: 30px; } .toast span { color: var(--dim); font-size: 11px; }
+  #sub { position: fixed; left: 50%; bottom: 7vh; transform: translateX(-50%); z-index: 7; font-size: 15px; letter-spacing: .08em; color: #e8e2d6;
+    text-shadow: 0 0 8px #000, 0 0 2px #000; opacity: 0; transition: opacity .6s; pointer-events: none; text-align: center; max-width: 86vw; }
+  #sub.on { opacity: 1; }
+  #batt { position: fixed; left: calc(22px + env(safe-area-inset-left)); bottom: calc(20px + env(safe-area-inset-bottom)); display: flex; align-items: center; gap: 8px;
+    opacity: 0; transition: opacity .6s; color: rgba(217,222,226,.6); }
+  #batt.on { opacity: .8; }
+  #batt svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 1.6; }
+  #batt i, .bat i { display: inline-block; width: 64px; height: 4px; background: rgba(217,222,226,.15); }
+  #batt s, .bat s { display: block; height: 100%; background: rgba(217,222,226,.75); text-decoration: none; transition: width .5s; }
+  #batt s.low { background: #c0504a; }
+  body.touch #batt { left: auto; right: calc(200px + env(safe-area-inset-right)); bottom: calc(36px + env(safe-area-inset-bottom)); }
+  /* ---------- Superposiciones (inventario, nota, teclado) ---------- */
+  .overlay { position: fixed; inset: 0; z-index: 15; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,.62); }
+  .panel { width: min(720px, 92vw); max-height: 86vh; background: rgba(10,12,14,.92); border: 1px solid var(--line); padding: 18px 22px; display: flex; flex-direction: column; }
+  .tabs { display: flex; gap: 18px; border-bottom: 1px solid var(--line); margin-bottom: 16px; }
+  .tabs button { background: none; border: 0; color: var(--dim); font: inherit; font-size: 12px; letter-spacing: .4em; padding: 6px 0 10px; cursor: pointer; text-transform: uppercase; }
+  .tabs button.on { color: var(--fg); border-bottom: 1px solid var(--fg); }
+  .tabs .x { margin-left: auto; letter-spacing: 0; font-size: 16px; }
+  .invBody { display: grid; grid-template-columns: 300px 1fr; gap: 22px; min-height: 0; overflow: auto; }
+  #invList { display: grid; grid-template-columns: repeat(4, 66px); gap: 8px; align-content: start; }
+  #invList.notes { display: flex; flex-direction: column; gap: 4px; }
+  .slot { width: 66px; height: 66px; border: 1px solid var(--line); background: rgba(255,255,255,.03); position: relative; padding: 0; cursor: pointer; }
+  .slot:disabled { cursor: default; opacity: .5; }
+  .slot.on { border-color: rgba(217,222,226,.7); background: rgba(255,255,255,.08); }
+  .slot img { width: 54px; height: 54px; display: block; margin: auto; }
+  .slot b { position: absolute; right: 4px; bottom: 2px; font: 11px monospace; color: var(--fg); }
+  #invInfo h4 { margin: 0 0 8px; font-weight: 400; font-size: 15px; letter-spacing: .1em; } #invInfo h4 span { color: var(--dim); font-size: 12px; margin-left: 8px; }
+  #invInfo p { font-size: 13px; line-height: 1.7; color: #b9c0c5; margin: 0 0 12px; } #invInfo .dim { color: var(--dim); }
+  .bat { margin-top: 18px; font-size: 11px; letter-spacing: .2em; color: var(--dim); display: flex; align-items: center; gap: 10px; }
+  .noteRow { background: none; border: 0; border-bottom: 1px solid var(--line); color: #c9d0d4; font: inherit; font-size: 13px; text-align: left; padding: 9px 2px; cursor: pointer; display: flex; justify-content: space-between; gap: 12px; }
+  .noteRow span { color: var(--dim); font-size: 11px; } .noteRow:hover { color: #fff; }
+  .keys { font-size: 10px; letter-spacing: .2em; color: #59626a; margin-top: 14px; } body.touch .keys.desk { display: none; }
+  button.m.sm { font-size: 12px; padding: 6px 0; }
+  .paper { width: min(520px, 90vw); max-height: 84vh; overflow: auto; background: #e9e3d4; color: #2a2620; padding: 30px 34px 22px; box-shadow: 0 10px 50px #000;
+    font-family: Georgia, "Times New Roman", "Hiragino Mincho ProN", "Yu Mincho", serif; transform: rotate(-.6deg);
+    background-image: repeating-linear-gradient(transparent 0 27px, rgba(60,80,120,.13) 27px 28px); }
+  .paper h2 { margin: 0 0 16px; font-size: 18px; font-weight: 400; letter-spacing: .06em; }
+  .paper p { font-size: 15px; line-height: 1.75; margin: 0 0 12px; }
+  .paper button.m { color: #6b6458; } .paper button.m:hover { color: #2a2620; }
+  .kp { background: #1a1d1f; border: 1px solid #3a4044; padding: 18px; width: 240px; box-shadow: 0 10px 40px #000; }
+  .kpHead { font-size: 10px; letter-spacing: .3em; color: var(--dim); text-align: center; margin-bottom: 10px; }
+  #kpDisp { font: 30px monospace; letter-spacing: .1em; text-align: center; background: #0c1a12; color: #7dffb0; padding: 10px 0; margin-bottom: 14px; text-shadow: 0 0 8px rgba(80,255,150,.5); }
+  #kpDisp.ok { color: #c8ffd8; background: #12301e; } #kpDisp.bad { color: #ff7a6a; background: #2a0f0c; text-shadow: 0 0 8px rgba(255,80,60,.5); }
+  #kpKeys { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  #kpKeys button { height: 48px; background: #2a2f33; border: 1px solid #3c4347; color: #e0e4e6; font: 18px monospace; cursor: pointer; border-radius: 3px; touch-action: none; }
+  #kpKeys button:active { background: #3a4146; } #kpKeys button.fn { font-size: 13px; color: #a8b0b4; }
+  .kp button.m { display: block; margin: 12px auto 0; }
+  /* ---------- Final ---------- */
+  #ending { position: fixed; inset: 0; z-index: 25; background: #000; display: flex; flex-direction: column; justify-content: center; padding: 0 12vw; gap: 14px; }
+  #ending p { font-size: 17px; letter-spacing: .06em; color: #cfd4d6; margin: 0; opacity: 0; font-family: Georgia, serif; }
+  #ending p.big { font: 300 54px "Helvetica Neue", Arial, sans-serif; letter-spacing: .3em; margin: 24px 0; color: #e8ecee; }
+  #ending .fin { opacity: 0; margin-top: 36px; font-size: 30px; font-weight: 300; letter-spacing: .42em; }
+  #ending .fin small { display: block; font-size: 11px; letter-spacing: .5em; color: var(--dim); margin-top: 10px; }
+  #ending .fin span { display: block; font-size: 11px; letter-spacing: .12em; color: #59626a; margin: 22px 0 14px; }
+  #ending.run p { animation: endIn 2.4s ease forwards; }
+  #ending.run p:nth-child(1) { animation-delay: 1s; } #ending.run p:nth-child(2) { animation-delay: 4.5s; } #ending.run p:nth-child(3) { animation-delay: 8s; }
+  #ending.run p:nth-child(4) { animation-delay: 11.5s; } #ending.run p:nth-child(5) { animation-delay: 15s; }
+  #ending.run .fin { animation: endIn 3s ease 19s forwards; }
+  @keyframes endIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+  @media (max-width: 640px) { .invBody { grid-template-columns: 1fr; } #invList { grid-template-columns: repeat(4, 60px); } .slot { width: 60px; height: 60px; } }
+  @media (max-height: 560px) { .panel { max-height: 92vh; padding: 12px 16px; } #ending p { font-size: 14px; } #ending p.big { font-size: 36px; margin: 10px 0; } #ending .fin { margin-top: 14px; } }
+  #tbInv { right: calc(14px + env(safe-area-inset-right)); top: calc(66px + env(safe-area-inset-top)); width: 42px; height: 42px; }
 </style>
 <!-- Three.js desde CDN con versión fijada. Necesita internet la primera vez que se abre. -->
 <script type="importmap">
@@ -126,9 +200,10 @@
 
 <div id="menu" class="screen hidden">
   <div class="title">終電後<small>after the last train</small></div>
-  <button class="m" data-act="start">Iniciar</button>
+  <button class="m hidden" data-act="continue" id="btnContinue">Continuar</button>
+  <button class="m" data-act="start" id="btnStart">Iniciar</button>
   <button class="m" data-act="options">Opciones</button>
-  <div class="foot">usa auriculares<br><span class="desk">WASD + ratón · Shift correr · C agacharse · F linterna · E interactuar · Esc pausa</span><span class="mob">joystick a la izquierda para caminar · arrastra a la derecha para mirar · toca lo que veas para interactuar</span></div>
+  <div class="foot">usa auriculares<br><span class="desk">WASD + ratón · Shift correr · C agacharse · F linterna · R pilas · E interactuar · Tab inventario · Esc pausa</span><span class="mob">joystick a la izquierda para caminar · arrastra a la derecha para mirar · toca lo que veas para interactuar</span></div>
 </div>
 
 <div id="pause" class="screen hidden">
@@ -170,6 +245,7 @@
 <!-- Controles táctiles (solo en móvil) -->
 <div id="touch" class="hidden">
   <div id="joy"><div id="knob"></div></div>
+  <button class="tb" id="tbInv" aria-label="Inventario"><svg viewBox="0 0 24 24"><path d="M6 8h12l-1 12H7z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg></button>
   <button class="tb" id="tbPause" aria-label="Pausa"><svg viewBox="0 0 24 24"><path d="M9 6v12M15 6v12"/></svg></button>
   <button class="tb" id="tbRun" aria-label="Correr"><svg viewBox="0 0 24 24"><path d="M6 7l5 5-5 5M13 7l5 5-5 5"/></svg></button>
   <button class="tb" id="tbCrouch" aria-label="Agacharse"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6M6 18h12"/></svg></button>
@@ -181,6 +257,53 @@
 <div id="fatal" class="hidden"></div>
 <div id="fps" class="hidden"></div>
 
+<!-- ---- src/page/gameplay.html ---- -->
+<!-- HUD de juego: etiqueta de interacción, mensajes, subtítulos, pila -->
+<div id="hud" class="hidden">
+  <div id="hint"></div>
+  <div id="toasts"></div>
+  <div id="batt"><svg viewBox="0 0 24 24"><path d="M8 4h8l-1 6H9z"/><path d="M9 10h6v10H9z"/></svg><i><s id="battFill"></s></i></div>
+</div>
+<div id="sub"></div>
+
+<!-- Inventario -->
+<div id="inv" class="overlay hidden">
+  <div class="panel">
+    <div class="tabs"><button data-tab="items">objetos</button><button data-tab="notes">notas</button><button class="x" id="invClose" aria-label="Cerrar">✕</button></div>
+    <div class="invBody"><div id="invList"></div><div id="invInfo"></div></div>
+    <div class="keys desk">Tab / Esc para cerrar</div>
+  </div>
+</div>
+
+<!-- Nota -->
+<div id="noteView" class="overlay hidden">
+  <div class="paper">
+    <h2 id="noteTitle"></h2>
+    <div id="noteBody"></div>
+    <button class="m sm" id="noteClose">cerrar</button>
+  </div>
+</div>
+
+<!-- Teclado numérico -->
+<div id="keypad" class="overlay hidden">
+  <div class="kp">
+    <div class="kpHead">暗証番号 · CLAVE</div>
+    <div id="kpDisp">_ _ _ _</div>
+    <div id="kpKeys"></div>
+    <button class="m sm" id="kpClose">cerrar</button>
+  </div>
+</div>
+
+<!-- Final -->
+<div id="ending" class="hidden">
+  <p>Las puertas se cierran detrás de ti.</p>
+  <p>El vagón está vacío. Huele a lluvia y a calefacción.</p>
+  <p>En la pantalla sobre la puerta: <b>次は 終点</b> — próxima: terminal.</p>
+  <p>Te sientas. Apoyas la cabeza contra la ventana.</p>
+  <p class="big">0:42</p>
+  <div class="fin">終電後<small>after the last train · fin</small><span>gracias por jugar — todo el sonido, la luz y las texturas están generados por código</span>
+    <button class="m" data-act="endMenu">Volver al menú</button></div>
+</div>
 <script type="module">
 // ==== src/core/config.js ====
 import * as THREE from 'three';
@@ -218,7 +341,14 @@ const CONFIG = {
   FLASH_INTENSITY: 9,      // linterna (candelas)
   FLASH_RANGE: 16,
   FLASH_LAG: 9,            // cuanto más alto, menos retraso al seguir la cámara
-  DYNAMIC_RES: true,       // baja la resolución interna sola si los fps caen por debajo de ~40
+  DYNAMIC_RES: true,
+  // --- Terror ---
+  BATTERY_START: 70,       // % de pila de la linterna al empezar
+  BATTERY_DRAIN: 0.3,      // % por segundo con la linterna encendida (~4 min con la carga inicial)
+  BATTERY_PACK: 45,        // % que recarga cada pila
+  DARK_LEVEL: 0.045,       // por debajo de esta luz (luminancia horneada) se considera oscuridad
+  TENSION_RISE: 0.018,     // tensión por segundo a oscuras y sin linterna
+  TENSION_FALL: 0.03,      // tensión que se recupera por segundo en zonas iluminadas       // baja la resolución interna sola si los fps caen por debajo de ~40
   // --- Audio ---
   MASTER: 0.9,
   HUM_VOLUME: 1.0,         // zumbido de fluorescentes
@@ -564,12 +694,15 @@ function trainIcon(g, x, y, s, fg, bg) {
 // Parche de shader: el color de vértice (luz horneada) se suma como emisión
 // multiplicada por el albedo. Así hay decenas de fluorescentes "gratis" y las
 // 3 luces reales + la linterna siguen iluminando encima.
+// BakeK escala toda la luz horneada a la vez (apagones: solo queda la linterna y las luces reales)
+const BakeK = { value: 1 };
 function bakePatch(shader) {
-  shader.fragmentShader = shader.fragmentShader
+  shader.uniforms.uBake = BakeK;
+  shader.fragmentShader = 'uniform float uBake;\n' + shader.fragmentShader
     .replace('#include <color_fragment>', '')
     .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
 #if defined( USE_COLOR ) || defined( USE_INSTANCING_COLOR )
-  totalEmissiveRadiance += diffuseColor.rgb * vColor;
+  totalEmissiveRadiance += diffuseColor.rgb * vColor * uBake;
 #endif`);
 }
 const MATS = {};
@@ -722,7 +855,9 @@ Object.assign(MDEF, {
    ATAJOS — puertas y persianas que se desbloquean al recorrer el mapa (solo esta sesión)
    ===================================================================== */
 const Flags = {};
-const condOk = (c) => !c || !!Flags[c.flag] === c.state;
+// c = { flag, state } o una lista de ellas (todas deben cumplirse)
+const condOk = (c) => !c || (Array.isArray(c) ? c.every(condOk) : !!Flags[c.flag] === c.state);
+const condKey = (c) => (!c ? '' : Array.isArray(c) ? c.map(condKey).join('&') : c.flag + ':' + c.state);
 function setFlag(f) { Flags[f] = true; for (const z of Zones.cache.values()) z.refreshVariants(); }
 
 
@@ -1015,14 +1150,14 @@ function makeBaker(lights, occ, amb) {
 // ==== src/render/effects.js ====
 /* ---------- Materiales globales de efectos ---------- */
 const GlowMat = new THREE.ShaderMaterial({
-  uniforms: { uScale: { value: 400 }, uFog: { value: 0.04 } },
-  vertexShader: `attribute vec3 aColor; attribute float aSize; uniform float uScale; uniform float uFog; varying vec3 vC;
+  uniforms: { uScale: { value: 400 }, uFog: { value: 0.04 }, uK: { value: 1 } },
+  vertexShader: `attribute vec3 aColor; attribute float aSize; uniform float uScale; uniform float uFog; uniform float uK; varying vec3 vC;
     void main() {
       vec4 mv = modelViewMatrix * vec4(position, 1.0); gl_Position = projectionMatrix * mv;
       float d = -mv.z;
       gl_PointSize = clamp(aSize * uScale / max(d, 0.05), 1.0, 700.0);
       float f = exp(-pow(uFog * d, 2.0));
-      vC = aColor * f * smoothstep(0.2, 1.3, d);
+      vC = aColor * f * smoothstep(0.2, 1.3, d) * uK;
     }`,
   fragmentShader: `varying vec3 vC;
     void main() { vec2 p = gl_PointCoord * 2.0 - 1.0; float r2 = dot(p, p); if (r2 > 1.0) discard;
@@ -1050,19 +1185,20 @@ class ZoneCtx {
     this.owned = { tex: [], mat: [] }; this.deferred = []; this.cond = null; this.matKeys = new Set();
     this.fog = { color: [0.01, 0.012, 0.016], density: 0.05 }; this.ambient = [0.01, 0.01, 0.012];
     this.hemi = { sky: 0x202a38, ground: 0x08090a, I: 0.2 }; this.reverb = 'stairwell';
+    this.triggers = []; this.sparkles = []; this.onActivate = null;
   }
   bt(key) {
     if (typeof key !== 'string') return key; // ya es un lote
-    const k = this.cond ? key + '§' + this.cond.flag + ':' + this.cond.state : key;
+    const k = this.cond ? key + '§' + condKey(this.cond) : key;
     let B = this.batches.get(k);
     if (!B) { const d = MDEF[key]; B = new Batch(d.mat(), d); B.cond = this.cond; this.batches.set(k, B); if (B.mat.userData.key) this.matKeys.add(B.mat.userData.key); }
     return B;
   }
   // Geometría/colisiones/interacciones que solo existen si un atajo está (o no) desbloqueado
-  when(flag, state, fn) { const prev = this.cond; this.cond = { flag, state }; fn(); this.cond = prev; }
+  when(flag, state, fn) { const prev = this.cond, c = { flag, state }; this.cond = prev ? [].concat(prev, c) : c; fn(); this.cond = prev; }
   // Lote propio con clave (para atlas de carteles/pósters compartidos por varios planos)
   ownBatch(key, make) {
-    const k = key + (this.cond ? '§' + this.cond.flag + ':' + this.cond.state : '');
+    const k = key + (this.cond ? '§' + condKey(this.cond) : '');
     let B = this.batches.get(k); if (!B) { B = make(); B.cond = this.cond; this.batches.set(k, B); } return B;
   }
   // --- Superficies básicas ---
@@ -1159,14 +1295,45 @@ class ZoneCtx {
     }
   }
   // Puerta: con E cambia de zona. flag = atajo requerido; unlock = atajo que desbloquea al usarla
-  door({ box, to, spawn, flag = null, unlock = null, pos, kind = 'door' }) {
+  // item = objeto que la abre (se gasta y activa 'flag'); msg = texto si sigue cerrada
+  door({ box, to, spawn, flag = null, unlock = null, pos, kind = 'door', item = null, msg = null, label = 'Abrir' }) {
     this.interact(box, () => {
-      if ((flag && !Flags[flag]) || !ZONE_DEFS[to]) { if (kind === 'shutter') AudioSys.shutterRattle(pos); else AudioSys.doorRattle(pos); return; }
+      if (flag && !Flags[flag] && item && Inv.has(item)) { Inv.take(item); setFlag(flag); Hud.msg('Usas: ' + ITEMS[item].name); AudioSys.unlock(pos); }
+      if ((flag && !Flags[flag]) || !ZONE_DEFS[to]) { if (kind === 'shutter') AudioSys.shutterRattle(pos); else AudioSys.doorRattle(pos); if (msg) Hud.msg(msg); return; }
       if (unlock) setFlag(unlock);
       AudioSys.doorOpen(pos, kind);
       Game.transition(to, spawn, kind === 'shutter' ? 1.4 : 0.35);
-    });
+    }, label);
   }
+  // Objeto recogible: su geometría existe hasta recogerlo (atajo 'got_<id>'), con un destello sutil
+  pickup({ id, item, n = 1, p, box, build, label, msg, onTake }) {
+    const flag = 'got_' + id;
+    box = box || { x0: p[0] - 0.25, x1: p[0] + 0.25, y0: p[1] - 0.2, y1: p[1] + 0.25, z0: p[2] - 0.25, z1: p[2] + 0.25 };
+    this.when(flag, false, () => {
+      if (build) build(this);
+      this.interact(box, () => { setFlag(flag); Inv.add(item, n); AudioSys.pickup(); if (msg) Hud.msg(msg, 4); if (onTake) onTake(); }, label || 'Recoger');
+    });
+    this.sparkles.push({ p, cond: this.cond ? [].concat(this.cond, { flag, state: false }) : { flag, state: false } });
+  }
+  // Nota legible (se puede releer); el destello desaparece al leerla
+  note({ id, p, facing = '+y', w = 0.21, h = 0.27, box, label = 'Leer' }) {
+    this.poster(Signs.paper, p, facing, w, h, { key: 'paper', alpha: true, uv: [(NOTE_IDS.indexOf(id) % 4) / 4, 0, (NOTE_IDS.indexOf(id) % 4 + 1) / 4, 1], off: 0.008 });
+    box = box || { x0: p[0] - 0.3, x1: p[0] + 0.3, y0: p[1] - 0.25, y1: p[1] + 0.25, z0: p[2] - 0.3, z1: p[2] + 0.3 };
+    this.interact(box, () => Notes.read(id), label);
+    this.sparkles.push({ p, cond: this.cond ? [].concat(this.cond, { flag: 'note_' + id, state: false }) : { flag: 'note_' + id, state: false } });
+  }
+  // Calcomanía (suciedad, pintadas, grietas, cinta): transparente, sin escribir profundidad
+  decal(key, cv, c, facing, w, h, o = {}) {
+    const B = this.ownBatch('D:' + key, () => {
+      const t = toTex(typeof cv === 'function' ? cv() : cv, { repeat: false }); this.owned.tex.push(t);
+      const m = new THREE.MeshLambertMaterial({ map: t, vertexColors: true, transparent: true, depthWrite: false, alphaTest: 0.01, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -4 });
+      m.onBeforeCompile = bakePatch; this.owned.mat.push(m);
+      return new Batch(m, { seg: 0.5, order: 2 });
+    });
+    this.placeQuad(B, c, facing, w, h, { off: 0.004, ...o });
+  }
+  // Volumen que dispara algo al entrar. o.id: solo una vez por partida (se guarda)
+  trigger(box, fn, o = {}) { this.triggers.push({ box, fn, id: o.id || null, cond: o.cond !== undefined ? o.cond : this.cond, inside: false }); }
   // --- Escaleras: peldaños visibles + rampa invisible para caminar ---
   stairs({ axis, sTop, sBot, w0, w1, yTop, yBot, n, surface = 'stair', tread = 'tread', riser = 'riser' }) {
     const d = Math.sign(sBot - sTop), L = Math.abs(sBot - sTop), t = L / n, r = (yTop - yBot) / n;
@@ -1193,7 +1360,7 @@ class ZoneCtx {
   collider(x0, x1, z0, z1, y0 = -100, y1 = 100) { this.colliders.push({ x0, x1, z0, z1, y0, y1, cond: this.cond }); }
   occluder(x0, x1, y0, y1, z0, z1) { this.occ.push({ x0, x1, y0, y1, z0, z1 }); }
   portal(box, to, spawn) { this.portals.push({ box, to, spawn, cond: this.cond }); }
-  interact(box, action) { this.inter.push({ box, action, cond: this.cond }); }
+  interact(box, action, label = null) { this.inter.push({ box, action, cond: this.cond, label }); }
   spawn(name, x, z, yaw, pitch = 0) { this.spawns[name] = { x, z, yaw, pitch }; }
   emitter(def) { this.emitters.push(def); if (def.group) this.grp(def.group).emitters.push(this.emitters.length - 1); }
   reverbArea(box, preset) { this.revAreas.push({ box, preset }); }
@@ -1292,7 +1459,7 @@ class ZoneCtx {
       this.group.add(glintMesh);
     }
     this.group.updateMatrixWorld(true);
-    return new Zone(this, realActive, { tubeMesh, glowGeo, glintMesh });
+    return new Zone(this, realActive, { tubeMesh, glowGeo, glintMesh, baker });
   }
 }
 
@@ -1300,6 +1467,15 @@ class ZoneCtx {
 /* =====================================================================
    ZONA en ejecución — activar/desactivar, parpadeos, reflejos, sonido
    ===================================================================== */
+// Corriente general (apagones): escala la luz horneada, los tubos, los halos y las luces reales
+const Power = {
+  k: 1,
+  apply(zone) {
+    const k = this.k; BakeK.value = lerp(0.03, 1, k); GlowMat.uniforms.uK.value = lerp(0.02, 1, k); TubeMat.color.setScalar(lerp(0.03, 1, k));
+    if (zone) World.hemi.intensity = zone.hemi.I * lerp(0.35, 1, k);
+    for (const L of World.lights) L.intensity = (L.userData.base || 0) * (L.userData.lv ?? 1) * k;
+  },
+};
 const _m4 = new THREE.Matrix4(), _q = new THREE.Quaternion(), _qx = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), 0);
 const _v = new THREE.Vector3(), _s = new THREE.Vector3(), _c = new THREE.Color(), _yAxis = new THREE.Vector3(0, 1, 0);
 class Zone {
@@ -1311,6 +1487,8 @@ class Zone {
     this.matKeys = ctx.matKeys; this.variants = this.group.children.filter((o) => o.userData.cond);
     this.tubeMesh = fx.tubeMesh; this.glowGeo = fx.glowGeo; this.glintMesh = fx.glintMesh;
     this.emitters = []; this.active = false; this.flicks = [];
+    this.triggers = ctx.triggers; this.sparkles = ctx.sparkles; this.onActivate = ctx.onActivate;
+    const bk = fx.baker; this.lightAt = (p) => bk.at(p, [0, 1, 0]);
     this.nextFlicker = rand(CONFIG.FLICKER_MIN * 0.4, CONFIG.FLICKER_MAX * 0.6);
     for (const g of Object.values(this.groups)) if (g.mode === 'faulty') g.next = rand(3, 9);
   }
@@ -1318,7 +1496,7 @@ class Zone {
   refreshVariants() { for (const o of this.variants) if (!o.userData.rising) o.visible = condOk(o.userData.cond); }
   // Anima hacia arriba (persiana) la geometría que desaparece al desbloquear 'flag'
   raise(flag) {
-    this.rising = this.variants.filter((o) => o.userData.cond.flag === flag && o.userData.cond.state === false);
+    this.rising = this.variants.filter((o) => { const c = o.userData.cond; return !Array.isArray(c) && c.flag === flag && c.state === false; });
     for (const o of this.rising) o.userData.rising = true; this.riseT = 0;
   }
   activate() {
@@ -1331,10 +1509,14 @@ class Zone {
       const d = this.real[i];
       if (d) { L.position.set(d.p[0], d.p[1], d.p[2]); L.color.setRGB(d.color[0], d.color[1], d.color[2]); L.intensity = d.I; L.distance = d.range; L.userData.base = d.I; }
       else { L.intensity = 0; L.userData.base = 0; }
+      L.userData.lv = 1;
     });
+    for (const t of this.triggers) t.inside = false;
     this.active = true; this.revCur = null;
     for (const g of Object.values(this.groups)) this.setLevel(g, 1);
     if (AudioSys.ready) this.startAudio();
+    Sparkles.setZone(this);
+    if (this.onActivate) this.onActivate(this);
   }
   deactivate() {
     World.scene.remove(this.group); this.stopAudio(); this.active = false; this.flicks = [];
@@ -1358,7 +1540,7 @@ class Zone {
       for (const i of g.glows) a.setXYZ(i, b[i * 3] * lv, b[i * 3 + 1] * lv, b[i * 3 + 2] * lv);
       a.needsUpdate = true;
     }
-    if (g.real != null && this.real[g.real]) { const L = World.lights[g.real]; L.intensity = (L.userData.base || 0) * lv; }
+    if (g.real != null && this.real[g.real]) World.lights[g.real].userData.lv = lv;
     for (const m of g.mats) m.mat.color.copy(m.base).multiplyScalar(lerp(0.04, 1, lv));
     for (const i of g.emitters) { const e = this.emitters[i]; if (e) e.setLevel(lv > 0.45 ? Math.min(1, lv * 1.1) : 0, 0.008); }
   }
@@ -1399,6 +1581,7 @@ class Zone {
     // --- emisores con eventos ---
     for (const e of this.emitters) if (e.update) e.update(dt);
     this.updateReverb(false);
+    Power.apply(this);
   }
   tink(g) { if (!AudioSys.ready) return; for (const i of g.emitters) { const d = this.emitterDefs[i]; if (d && d.pos) AudioSys.tink(d.pos); } }
   updateReverb(force) {
@@ -1931,6 +2114,171 @@ Object.assign(EMIT, {
 });
 
 
+// ==== src/audio/audio-horror.js ====
+/* =====================================================================
+   AUDIO DE TERROR — latido, susurros, golpes, teléfono, tren... (todo sintetizado)
+   ===================================================================== */
+// Permite redirigir las pisadas a un punto del espacio (pasos "de otro")
+AudioSys.toSfx = function (node, send) {
+  node.connect(this._dest || this.sfx);
+  if (send > 0) { const s = this.gain(send); node.connect(s); s.connect(this.sfxSend); }
+};
+Object.assign(AudioSys, {
+  _dest: null,
+  // nodo no posicional temporal (se desconecta solo)
+  tmp(v = 1, send = 0.3, ms = 8000) {
+    const g = this.gain(v); this.toSfx(g, send);
+    setTimeout(() => { try { g.disconnect(); } catch (e) { /* nada */ } }, ms);
+    return g;
+  },
+  noiseBurst(dest, t, type, f, q, v, att, dec, kind = 'white') {
+    const s = this.ctx.createBufferSource(); s.buffer = this[kind];
+    const fl = this.filt(type, f, q), g = this.gain(0);
+    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(v, t + att); g.gain.exponentialRampToValueAtTime(0.0002, t + att + dec);
+    s.connect(fl); fl.connect(g); g.connect(dest); s.start(t, Math.random() * 2, att + dec + 0.05);
+    return fl;
+  },
+  tone(dest, t, f, v, att, dec, type = 'sine', f2 = null) {
+    const o = this.ctx.createOscillator(), g = this.gain(0); o.type = type; o.frequency.setValueAtTime(f, t);
+    if (f2) o.frequency.exponentialRampToValueAtTime(f2, t + att + dec);
+    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(v, t + att); g.gain.exponentialRampToValueAtTime(0.0002, t + att + dec);
+    o.connect(g); g.connect(dest); o.start(t); o.stop(t + att + dec + 0.05);
+  },
+  // ---------- Objetos ----------
+  pickup() {
+    if (!this.ready) return; const d = this.tmp(1, 0.25), t = this.ctx.currentTime + 0.01;
+    this.rustle(0.1); this.click(d, 0.2, 3000); this.tone(d, t + 0.05, 880, 0.02, 0.01, 0.5); this.tone(d, t + 0.05, 1320, 0.012, 0.01, 0.7);
+  },
+  paper() { if (!this.ready) return; const d = this.tmp(1, 0.2), t = this.ctx.currentTime + 0.01; for (let i = 0; i < 5; i++) this.noiseBurst(d, t + i * rand(0.03, 0.07), 'bandpass', rand(2500, 5000), 1.2, rand(0.04, 0.09), 0.005, rand(0.03, 0.08)); },
+  unlock(pos) { if (!this.ready) return; const d = this.at(pos, 0.6), t = this.ctx.currentTime + 0.01; this.metalHit(d, t, 0.15, 1300); this.metalHit(d, t + 0.18, 0.22, 900); this.click(d, 0.3, 2400); },
+  batterySwap() { if (!this.ready) return; const d = this.tmp(1, 0.1), t = this.ctx.currentTime; this.click(d, 0.25, 2600); setTimeout(() => this.click(d, 0.3, 1800), 260); setTimeout(() => this.click(d, 0.22, 3400), 520); },
+  keyBeep(ok) {
+    if (!this.ready) return; const d = this.tmp(1, 0.2), t = this.ctx.currentTime + 0.005;
+    if (ok === true) { [0, 0.12, 0.24].forEach((dt, i) => this.tone(d, t + dt, [1318, 1568, 2093][i], 0.035, 0.004, 0.12, 'square')); }
+    else if (ok === false) this.tone(d, t, 180, 0.07, 0.005, 0.45, 'sawtooth');
+    else this.tone(d, t, 1760, 0.03, 0.003, 0.07, 'square');
+  },
+  // ---------- Tensión ----------
+  heartbeat(v) {
+    if (!this.ready) return; const d = this.tmp(1, 0, 3000), t = this.ctx.currentTime + 0.01, lp = this.filt('lowpass', 120); lp.connect(d);
+    this.tone(lp, t, 62, v, 0.012, 0.16, 'sine', 40); this.tone(lp, t + 0.24, 55, v * 0.7, 0.012, 0.2, 'sine', 38);
+  },
+  // Susurro: ruido con formantes que cambian (sílabas sin sentido), muy reverberado
+  whisper(pos, v = 0.35, dur = rand(1.4, 2.6)) {
+    if (!this.ready) return; const c = this.ctx, t = c.currentTime + 0.05;
+    const d = pos ? this.at(pos, 1.4, 1.0) : this.tmp(1, 0.8);
+    const s = this.loop('white'), hp = this.filt('highpass', 900), f1 = this.filt('bandpass', 1200, 6), f2 = this.filt('bandpass', 2600, 7), g = this.gain(0), m = this.gain(1);
+    s.connect(hp); hp.connect(f1); hp.connect(f2); f1.connect(m); f2.connect(m); m.connect(g); g.connect(d);
+    const n = Math.max(3, Math.round(dur / 0.17));
+    g.gain.setValueAtTime(0, t);
+    for (let i = 0; i < n; i++) {
+      const tt = t + (i / n) * dur, a = rand(0.4, 1) * v * Math.sin(PI * (i + 0.5) / n);
+      g.gain.linearRampToValueAtTime(a, tt + 0.04); g.gain.linearRampToValueAtTime(a * 0.15, tt + dur / n * 0.9);
+      f1.frequency.setValueAtTime(rand(500, 1300), tt); f2.frequency.setValueAtTime(rand(1700, 3200), tt);
+    }
+    g.gain.linearRampToValueAtTime(0, t + dur + 0.1); s.stop(t + dur + 0.2);
+  },
+  // Golpe seco de terror: grave + metal + ruido, para sustos
+  stinger(v = 0.5) {
+    if (!this.ready) return; const d = this.tmp(1, 0.9), t = this.ctx.currentTime + 0.01;
+    this.tone(d, t, 48, v, 0.005, 1.6, 'sine', 30); this.noiseBurst(d, t, 'lowpass', 900, 0.7, v * 0.6, 0.004, 0.5, 'brown');
+    for (const f of [311, 330, 466]) this.tone(d, t, f, v * 0.05, 0.02, 2.2, 'sawtooth', f * 0.97);
+  },
+  // Desaparición de una silueta: aspiración inversa + grave
+  vanish(pos) {
+    if (!this.ready) return; const d = pos ? this.at(pos, 1.2, 3) : this.tmp(1, 0.8), c = this.ctx, t = c.currentTime + 0.01;
+    const s = this.loop('pink'), bp = this.filt('bandpass', 400, 1.2), g = this.gain(0);
+    bp.frequency.setValueAtTime(300, t); bp.frequency.exponentialRampToValueAtTime(3000, t + 0.7);
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.5, t + 0.6); g.gain.linearRampToValueAtTime(0, t + 0.75);
+    s.connect(bp); bp.connect(g); g.connect(d); s.stop(t + 0.8);
+    this.tone(this.tmp(1, 0.5), t + 0.7, 40, 0.5, 0.005, 1.2, 'sine', 28);
+  },
+  // Portazo lejano / cercano
+  slam(pos, v = 0.9) {
+    if (!this.ready) return; const d = this.at(pos, 1.2, 2.5), t = this.ctx.currentTime + 0.01;
+    this.thumpTo(d, t, 55, v); this.thumpTo(d, t + 0.01, 90, v * 0.6); this.metalHit(d, t, v * 0.5, 260); this.metalHit(d, t + 0.05, v * 0.3, 520);
+    this.noiseBurst(d, t, 'lowpass', 1500, 0.7, v * 0.5, 0.002, 0.35);
+  },
+  // Golpes en las puertas de andén, desde el lado de la vía
+  bang(pos, n = 3) {
+    if (!this.ready) return; const d = this.at(pos, 1.0, 2.0), t0 = this.ctx.currentTime + 0.02;
+    for (let i = 0; i < n; i++) { const t = t0 + i * rand(0.38, 0.6); this.thumpTo(d, t, 70, 0.8); this.metalHit(d, t, 0.18, 350); this.noiseBurst(d, t, 'bandpass', 700, 1, 0.2, 0.002, 0.15); }
+  },
+  // Apagón: chasquido grave + zumbido que cae
+  powerDown() {
+    if (!this.ready) return; const d = this.tmp(1, 0.9), t = this.ctx.currentTime + 0.01;
+    this.thumpTo(d, t, 60, 0.7); this.metalHit(d, t, 0.2, 180);
+    this.tone(d, t, 120, 0.08, 0.005, 1.4, 'sawtooth', 30);
+  },
+  powerUp() {
+    if (!this.ready) return; const d = this.tmp(1, 0.6), t = this.ctx.currentTime + 0.01;
+    this.tone(d, t, 40, 0.05, 0.4, 0.8, 'sawtooth', 120); for (let i = 0; i < 4; i++) this.click(d, 0.15, rand(3000, 5000));
+  },
+  // Fluorescente que revienta
+  lampPop(pos) {
+    if (!this.ready) return; const d = this.at(pos, 1.0, 1.5), t = this.ctx.currentTime + 0.01;
+    this.noiseBurst(d, t, 'highpass', 1200, 0.7, 0.6, 0.001, 0.08);
+    for (let i = 0; i < 9; i++) this.tone(d, t + 0.05 + rand(0, 0.5), rand(3000, 7000), rand(0.02, 0.06), 0.001, rand(0.05, 0.15));
+  },
+  // Pasos de alguien más (posicionales), n pasos acercándose desde 'from' hacia 'to'
+  stepAt(pos, surface) {
+    if (!this.ready) return; const d = this.at(pos, 0.9, 1.4); this._dest = d;
+    try { this.footstep(surface, { run: false }); } finally { this._dest = null; }
+  },
+  // Teléfono público japonés: timbre electrónico (dos tonos alternos), en bucle hasta parar
+  phoneRing(pos) {
+    if (!this.ready) return null; const c = this.ctx, out = this.gain(1), p = this.panner(pos, 0.7, 1.2), snd = this.gain(0.7);
+    out.connect(p); p.connect(this.sfx); p.connect(snd); snd.connect(this.sfxSend);
+    let alive = true;
+    const ring = () => {
+      if (!alive) return; const t = c.currentTime + 0.02;
+      for (let i = 0; i < 20; i++) { const tt = t + i * 0.05; this.tone(out, tt, i % 2 ? 960 : 800, 0.06, 0.002, 0.045, 'square'); }
+      setTimeout(ring, 2000);
+    };
+    ring();
+    return { stop() { alive = false; setTimeout(() => { try { out.disconnect(); p.disconnect(); snd.disconnect(); } catch (e) { /* nada */ } }, 1200); } };
+  },
+  // Al descolgar: estática + voz susurrada lejana
+  phoneVoice() {
+    if (!this.ready) return; const d = this.tmp(1, 0.2), t = this.ctx.currentTime + 0.05;
+    const s = this.loop('white'), bp = this.filt('bandpass', 1800, 0.8), g = this.gain(0);
+    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(0.05, t + 0.1); g.gain.setValueAtTime(0.05, t + 5); g.gain.linearRampToValueAtTime(0, t + 5.5);
+    s.connect(bp); bp.connect(g); g.connect(d); s.stop(t + 5.6);
+    setTimeout(() => this.whisper(null, 0.25, 2.2), 900); setTimeout(() => this.whisper(null, 0.3, 1.6), 3200);
+    this.tone(d, t + 5.6, 400, 0.04, 0.005, 0.2, 'square');
+  },
+  // Melodía de andén (chime)
+  chime() {
+    if (!this.ready) return; const d = this.at([0, 2.8, 0], 1.0, 8), t = this.ctx.currentTime + 0.05;
+    [659, 523, 587, 392, 0, 392, 587, 659, 523].forEach((f, i) => { if (!f) return; const tt = t + i * 0.36; this.tone(d, tt, f, 0.06, 0.01, 0.9); this.tone(d, tt, f * 2, 0.012, 0.01, 0.5); });
+  },
+  // Llegada del tren: retumbar creciente, chirrido de frenos, golpe de parada
+  trainArrive(dur = 9) {
+    if (!this.ready) return; const c = this.ctx, t = c.currentTime + 0.05, d = this.tmp(1, 0.9, (dur + 6) * 1000);
+    const s = this.loop('brown'), lp = this.filt('lowpass', 160), g = this.gain(0);
+    lp.frequency.setValueAtTime(90, t); lp.frequency.linearRampToValueAtTime(420, t + dur * 0.7); lp.frequency.linearRampToValueAtTime(140, t + dur + 1.5);
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(1.2, t + dur * 0.65); g.gain.exponentialRampToValueAtTime(0.0001, t + dur + 2.5);
+    s.connect(lp); lp.connect(g); g.connect(d); s.stop(t + dur + 3);
+    for (let k = 0; k < 22; k++) { const tt = t + dur * 0.3 + k * (0.18 + k * 0.012); if (tt < t + dur) { this.thumpTo(d, tt, 55, 0.25 * Math.min(1, k / 6)); } }
+    const sq = this.loop('white'), bp = this.filt('bandpass', 3200, 18), sg = this.gain(0);
+    bp.frequency.setValueAtTime(3400, t + dur * 0.55); bp.frequency.linearRampToValueAtTime(2600, t + dur);
+    sg.gain.setValueAtTime(0, t + dur * 0.55); sg.gain.linearRampToValueAtTime(0.1, t + dur * 0.75); sg.gain.linearRampToValueAtTime(0, t + dur + 0.2);
+    sq.connect(bp); bp.connect(sg); sg.connect(d); sq.stop(t + dur + 0.4);
+    this.thumpTo(d, t + dur, 45, 0.6);
+    // aire de las puertas al abrirse
+    this.noiseBurst(d, t + dur + 2.2, 'bandpass', 1400, 0.6, 0.25, 0.05, 0.9, 'pink');
+  },
+});
+Object.assign(AudioSys, {
+  coins(pos) { if (!this.ready) return; const d = this.at(pos, 0.6), t = this.ctx.currentTime + 0.05; for (let i = 0; i < 6; i++) this.metalHit(d, t + i * rand(0.05, 0.12), rand(0.08, 0.16), rand(1800, 2600)); },
+  ticketPrint(pos) {
+    if (!this.ready) return; const d = this.at(pos, 0.5), t = this.ctx.currentTime + 0.05;
+    for (let i = 0; i < 4; i++) this.metalHit(d, t + i * 0.09, 0.06, 2200);
+    this.noiseBurst(d, t + 0.4, 'bandpass', 900, 1.5, 0.15, 0.05, 0.9);
+    this.tone(d, t + 1.4, 1568, 0.04, 0.005, 0.15, 'square'); this.click(d, 0.25, 3000);
+  },
+  gateOpen(pos) { if (!this.ready) return; const d = this.at(pos, 0.6), t = this.ctx.currentTime + 0.02; this.tone(d, t, 1760, 0.04, 0.004, 0.1, 'square'); this.thumpTo(d, t + 0.15, 120, 0.3); this.metalHit(d, t + 0.18, 0.12, 700); },
+});
 // ==== src/audio/music.js ====
 /* =====================================================================
    MÚSICA OPCIONAL — dark ambient sintetizado: dron + pad lento + campanas suaves
@@ -2068,25 +2416,35 @@ const Post = {
   init() {
     this.mat = new THREE.ShaderMaterial({
       uniforms: { tDiffuse: { value: null }, uRes: { value: new THREE.Vector2(1, 1) }, uTime: { value: 0 }, uGrain: { value: CONFIG.GRAIN },
-        uVig: { value: CONFIG.VIGNETTE }, uCA: { value: CONFIG.CHROMATIC }, uExp: { value: CONFIG.EXPOSURE }, uFade: { value: 1 } },
+        uVig: { value: CONFIG.VIGNETTE }, uCA: { value: CONFIG.CHROMATIC }, uExp: { value: CONFIG.EXPOSURE }, uFade: { value: 1 },
+        uTen: { value: 0 }, uHit: { value: 0 }, uPulse: { value: 0 } },
       vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }',
       fragmentShader: `
-        uniform sampler2D tDiffuse; uniform vec2 uRes; uniform float uTime, uGrain, uVig, uCA, uExp, uFade; varying vec2 vUv;
+        uniform sampler2D tDiffuse; uniform vec2 uRes; uniform float uTime, uGrain, uVig, uCA, uExp, uFade, uTen, uHit, uPulse; varying vec2 vUv;
         vec3 aces(vec3 x){ return clamp((x*(2.51*x+0.03))/(x*(2.43*x+0.59)+0.14), 0.0, 1.0); }
         float hash(vec2 p){ p = fract(p * vec2(443.897, 441.423)); p += dot(p, p.yx + 19.19); return fract((p.x + p.y) * p.x); }
         void main(){
-          vec2 d = vUv - 0.5; float r2 = dot(d, d); vec3 c;
-          if (uCA > 0.0) { vec2 o = d * uCA * (0.6 + r2 * 5.0);
-            c = vec3(texture2D(tDiffuse, vUv + o).r, texture2D(tDiffuse, vUv).g, texture2D(tDiffuse, vUv - o).b); }
-          else c = texture2D(tDiffuse, vUv).rgb;
+          vec2 uv = vUv;
+          // tensión alta: la imagen "respira" y se deforma un poco
+          if (uTen > 0.55) { float w = (uTen - 0.55) / 0.45; uv += vec2(sin(uv.y * 17.0 + uTime * 1.7), cos(uv.x * 13.0 + uTime * 1.3)) * 0.0028 * w * w; }
+          vec2 d = uv - 0.5; float r2 = dot(d, d); vec3 c;
+          float ca = uCA + uTen * uTen * 0.007 + uHit * 0.008;
+          if (ca > 0.0) { vec2 o = d * ca * (0.6 + r2 * 5.0);
+            c = vec3(texture2D(tDiffuse, uv + o).r, texture2D(tDiffuse, uv).g, texture2D(tDiffuse, uv - o).b); }
+          else c = texture2D(tDiffuse, uv).rgb;
           c = aces(c * uExp);
           c = pow(c, vec3(1.0 / 2.2));
           // gradación: sombras ligeramente frías, contraste suave de cámara vieja
           c = mix(c, c * vec3(0.94, 1.0, 1.06), 0.5 * (1.0 - c));
-          float v = smoothstep(0.95, 0.25, length(d * vec2(uRes.x / uRes.y, 1.0)) * 0.95);
-          c *= mix(1.0, v, uVig);
+          // desaturación con la tensión
+          float lu = dot(c, vec3(0.299, 0.587, 0.114)); c = mix(c, vec3(lu) * vec3(0.98, 1.0, 1.03), uTen * 0.6);
+          float rr = length(d * vec2(uRes.x / uRes.y, 1.0)) * 0.95;
+          float v = smoothstep(0.95 - uTen * 0.3 - uPulse * 0.08, 0.25 - uTen * 0.12, rr);
+          c *= mix(1.0, v, min(1.0, uVig + uTen * 0.4));
+          // destello rojo en los sustos
+          c = mix(c, c * vec3(1.3, 0.45, 0.4) + vec3(0.05, 0.0, 0.0), uHit * 0.55);
           float g = hash(vUv * uRes + fract(uTime * 7.31) * 517.0) - 0.5;
-          c += g * uGrain * (0.55 + 0.45 * (1.0 - dot(c, vec3(0.33))));
+          c += g * uGrain * (1.0 + uTen * 1.6) * (0.55 + 0.45 * (1.0 - dot(c, vec3(0.33))));
           c *= 1.0 - uFade;
           gl_FragColor = vec4(c, 1.0);
         }`,
@@ -2105,6 +2463,7 @@ const Post = {
   },
   render(t, fade) {
     const u = this.mat.uniforms; u.uTime.value = t; u.uFade.value = fade; u.uExp.value = CONFIG.EXPOSURE * S.brightness; u.uCA.value = Q.ca ? CONFIG.CHROMATIC : 0;
+    u.uTen.value = Sanity.vis; u.uHit.value = Sanity.hit; u.uPulse.value = Sanity.pulse;
     const r = World.renderer;
     r.setRenderTarget(this.rt); r.render(World.scene, World.camera);
     r.setRenderTarget(null); r.render(this.scene, this.cam);
@@ -2126,6 +2485,70 @@ const DynRes = {
   },
 };
 
+// ==== src/render/particles.js ====
+/* =====================================================================
+   PARTÍCULAS — polvo que solo se ve dentro del haz de la linterna, y
+   destellos sutiles sobre los objetos que se pueden recoger o leer
+   ===================================================================== */
+const Particles = {
+  dust: null, spark: null,
+  init() {
+    // Polvo: 500 puntos en un cubo de 7 m que "envuelve" a la cámara (todo en la GPU)
+    const N = 700, pos = new Float32Array(N * 3), seed = new Float32Array(N);
+    for (let i = 0; i < N; i++) { pos[i * 3] = Math.random() * 7; pos[i * 3 + 1] = Math.random() * 7; pos[i * 3 + 2] = Math.random() * 7; seed[i] = Math.random(); }
+    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); g.setAttribute('aSeed', new THREE.BufferAttribute(seed, 1));
+    const m = new THREE.ShaderMaterial({
+      uniforms: { uCam: { value: new THREE.Vector3() }, uFP: { value: new THREE.Vector3() }, uFD: { value: new THREE.Vector3() }, uLv: { value: 0 }, uT: { value: 0 }, uScale: GlowMat.uniforms.uScale },
+      vertexShader: `attribute float aSeed; uniform vec3 uCam, uFP, uFD; uniform float uLv, uT, uScale; varying float vA;
+        void main() {
+          vec3 drift = vec3(sin(uT * 0.13 + aSeed * 40.0), -0.35 - aSeed * 0.3, cos(uT * 0.11 + aSeed * 23.0)) * uT * 0.06;
+          vec3 p = mod(position + drift - uCam + 3.5, 7.0) + uCam - 3.5;
+          vec3 d = p - uFP; float dist = length(d); float c = dot(d / max(dist, 1e-3), uFD);
+          vA = uLv * smoothstep(0.9, 0.97, c) * smoothstep(7.0, 1.0, dist) * smoothstep(0.25, 0.8, dist) * (0.5 + 0.5 * sin(uT * 2.0 + aSeed * 50.0));
+          vec4 mv = modelViewMatrix * vec4(p, 1.0); gl_Position = projectionMatrix * mv;
+          gl_PointSize = clamp(0.016 * uScale / max(-mv.z, 0.1), 1.0, 6.0);
+        }`,
+      fragmentShader: `varying float vA; void main() { vec2 q = gl_PointCoord * 2.0 - 1.0; float r = dot(q, q); if (r > 1.0 || vA < 0.003) discard; gl_FragColor = vec4(vec3(1.0, 0.95, 0.85) * vA * 0.55 * (1.0 - r), 1.0); }`,
+      blending: THREE.AdditiveBlending, depthWrite: false, transparent: true,
+    });
+    m.userData.shared = true;
+    this.dust = new THREE.Points(g, m); this.dust.frustumCulled = false; this.dust.renderOrder = 6; World.scene.add(this.dust);
+    // Destellos: hasta 24 puntos, se rellenan al activar cada zona
+    const sg = new THREE.BufferGeometry(); sg.setAttribute('position', new THREE.BufferAttribute(new Float32Array(24 * 3), 3)); sg.setAttribute('aSeed', new THREE.BufferAttribute(new Float32Array(24), 1));
+    const sm = new THREE.ShaderMaterial({
+      uniforms: { uT: { value: 0 }, uScale: GlowMat.uniforms.uScale },
+      vertexShader: `attribute float aSeed; uniform float uT, uScale; varying float vA;
+        void main() { vec4 mv = modelViewMatrix * vec4(position, 1.0); gl_Position = projectionMatrix * mv; float d = -mv.z;
+          float tw = pow(0.5 + 0.5 * sin(uT * 2.3 + aSeed * 6.28), 6.0);
+          vA = tw * smoothstep(9.0, 2.0, d) * 0.9; gl_PointSize = clamp(0.09 * uScale / max(d, 0.3), 2.0, 40.0); }`,
+      fragmentShader: `varying float vA; void main() { vec2 q = gl_PointCoord * 2.0 - 1.0; float r = dot(q, q); float a = exp(-r * 9.0) + max(0.0, 1.0 - abs(q.x) * 14.0) * max(0.0, 1.0 - abs(q.y)) * 0.5 + max(0.0, 1.0 - abs(q.y) * 14.0) * max(0.0, 1.0 - abs(q.x)) * 0.5;
+        gl_FragColor = vec4(vec3(0.9, 0.95, 1.0) * a * vA, 1.0); }`,
+      blending: THREE.AdditiveBlending, depthWrite: false, transparent: true,
+    });
+    sm.userData.shared = true;
+    this.spark = new THREE.Points(sg, sm); this.spark.frustumCulled = false; this.spark.renderOrder = 7; World.scene.add(this.spark);
+  },
+  update(cam, t) {
+    if (!this.dust) return;
+    const u = this.dust.material.uniforms; u.uCam.value.copy(cam.position); u.uFP.value.copy(World.flash.position); u.uFD.value.copy(Flashlight.dir);
+    u.uLv.value = Flashlight.level * (World.flash.intensity / CONFIG.FLASH_INTENSITY); u.uT.value = t;
+    this.spark.material.uniforms.uT.value = t;
+    Sparkles.refresh();
+  },
+};
+// Lista de destellos de la zona actual (se ocultan cuando el objeto ya se cogió)
+const Sparkles = {
+  zone: null, key: '',
+  setZone(z) { this.zone = z; this.key = ''; this.refresh(); },
+  refresh() {
+    const z = this.zone; if (!z || !Particles.spark) return;
+    const live = z.sparkles.filter((s) => condOk(s.cond)), key = live.length + ':' + z.id + ':' + live.map((s) => s.cond.flag).join();
+    if (key === this.key) return; this.key = key;
+    const g = Particles.spark.geometry, P = g.attributes.position, A = g.attributes.aSeed, n = Math.min(24, live.length);
+    for (let i = 0; i < n; i++) { P.setXYZ(i, live[i].p[0], live[i].p[1] + 0.05, live[i].p[2]); A.setX(i, (i * 0.37) % 1); }
+    P.needsUpdate = true; A.needsUpdate = true; g.setDrawRange(0, n);
+  },
+};
 // ==== src/player/input.js ====
 /* =====================================================================
    INPUT — teclado + ratón (Pointer Lock)
@@ -2144,15 +2567,23 @@ function initInput() {
     if (e.code === 'Tab') e.preventDefault();
     Input.keys.add(e.code);
     if (Game.state !== 'playing' || e.repeat) return;
+    // con una interfaz abierta (inventario, nota, teclado numérico) las teclas van a ella
+    if (Game.ui) {
+      if (Game.ui === 'keypad' && Keypad.key(e)) return;
+      if (e.code === 'Escape' || e.code === 'Tab' || e.code === 'KeyI' || (Game.ui === 'note' && e.code === 'KeyE')) Game.closeUI();
+      return;
+    }
     if (e.code === 'KeyF') Flashlight.toggle();
     if (e.code === 'KeyE') Game.interact();
     if (e.code === 'KeyC') Player.toggleCrouch();
+    if (e.code === 'KeyR') Flashlight.reload();
+    if (e.code === 'Tab' || e.code === 'KeyI') Inventory.show();
     if (e.code === 'Escape') { Game.pause(); if (document.pointerLockElement) document.exitPointerLock(); }
   });
   addEventListener('keyup', (e) => Input.keys.delete(e.code));
   addEventListener('blur', () => Input.keys.clear());
   addEventListener('mousemove', (e) => {
-    if (!Input.locked || Game.state !== 'playing') return;
+    if (!Input.locked || Game.state !== 'playing' || Game.ui) return;
     // Al bloquear el ratón algunos navegadores mandan un "salto" falso (recentrado del cursor): se ignora
     const m = Math.max(Math.abs(e.movementX), Math.abs(e.movementY));
     if ((performance.now() - Input.lockTime < 600 && m > 40) || m > 500) return;
@@ -2162,14 +2593,14 @@ function initInput() {
     Input.locked = document.pointerLockElement === World.renderer.domElement;
     if (Input.locked) Input.lockTime = performance.now();
     if (Input.locked) document.getElementById('resume').classList.add('hidden');
-    else if (Game.state === 'playing') Game.pause();
+    else if (Game.state === 'playing' && !Game.ui) Game.pause();
   });
   document.addEventListener('pointerlockerror', onLockError);
-  World.renderer.domElement.addEventListener('click', () => { if (Game.state === 'playing' && !Input.locked) Input.requestLock(); });
+  World.renderer.domElement.addEventListener('click', () => { if (Game.state === 'playing' && !Input.locked && !Game.ui) Input.requestLock(); });
 }
 function onLockError() {
   if (DEBUG) return; // en pruebas automáticas se juega sin bloquear el ratón
-  if (Game.state === 'playing') document.getElementById('resume').classList.remove('hidden');
+  if (Game.state === 'playing' && !Game.ui) document.getElementById('resume').classList.remove('hidden');
 }
 
 // ==== src/player/touch.js ====
@@ -2187,7 +2618,7 @@ const Touch = {
     const place = (x, y) => { joy.style.left = x + 'px'; joy.style.top = y + 'px'; };
     this.resetJoy = () => { place(Math.max(90, innerWidth * 0.15), innerHeight - Math.max(95, innerHeight * 0.26)); joy.classList.remove('on'); knob.style.transform = ''; this.ax = this.ay = 0; };
     L.addEventListener('pointerdown', (e) => {
-      if (Game.state !== 'playing') return;
+      if (Game.state !== 'playing' || Game.ui) return;
       e.preventDefault();
       if (e.clientX < innerWidth * 0.42 && !this.joy) { this.joy = { id: e.pointerId, x0: e.clientX, y0: e.clientY }; place(e.clientX, e.clientY); joy.classList.add('on'); }
       else if (!this.look) this.look = { id: e.pointerId, x: e.clientX, y: e.clientY, x0: e.clientX, y0: e.clientY, t0: performance.now() };
@@ -2221,6 +2652,7 @@ const Touch = {
     btn('tbCrouch', () => Player.toggleCrouch());
     btn('tbRun', () => { this.run = !this.run; });
     btn('tbPause', () => Game.pause());
+    btn('tbInv', () => Inventory.show());
     this.resetJoy();
     addEventListener('resize', () => { this.resetJoy(); });
   },
@@ -2345,32 +2777,584 @@ const Player = {
     }
     const breathe = Math.sin(time * 1.6) * 0.004;
     const rx = Math.cos(this.yaw), rz = -Math.sin(this.yaw);
-    cam.position.set(this.pos.x + rx * bx, this.camY + by + breathe, this.pos.z + rz * bx);
-    cam.rotation.set(this.pitch + Math.sin(time * 0.8) * 0.002, this.yaw, roll);
+    // temblor de cámara (sustos y tensión alta)
+    const sh = Sanity.shake, sx = sh ? (Math.sin(time * 47) + Math.sin(time * 31.7)) * 0.5 * sh : 0, sy = sh ? (Math.sin(time * 53.3) + Math.sin(time * 27.1)) * 0.5 * sh : 0;
+    cam.position.set(this.pos.x + rx * (bx + sx * 0.02), this.camY + by + breathe + sy * 0.015, this.pos.z + rz * (bx + sx * 0.02));
+    cam.rotation.set(this.pitch + Math.sin(time * 0.8) * 0.002 + sy * 0.012, this.yaw + sx * 0.01, roll + sx * 0.008);
   },
 };
 
 // ==== src/player/flashlight.js ====
 /* =====================================================================
-   LINTERNA — SpotLight con retraso al seguir la cámara y leve parpadeo
+   LINTERNA — SpotLight con retraso al seguir la cámara, parpadeo y pilas
    ===================================================================== */
 const Flashlight = {
-  on: false, dir: new THREE.Vector3(0, 0, -1), level: 0, flick: 1, flickT: 0,
-  toggle() { this.on = !this.on; AudioSys.flashClick(this.on); },
+  on: false, dir: new THREE.Vector3(0, 0, -1), level: 0, flick: 1, flickT: 0, battery: CONFIG.BATTERY_START, warned: false,
+  toggle() {
+    if (!this.on && this.battery <= 0) {
+      AudioSys.flashClick(true);
+      Hud.msg('La linterna no tiene pilas.' + (Inv.has('battery') ? (Touch.enabled ? ' Usa unas pilas desde el inventario.' : ' Pulsa R para cambiarlas.') : ''));
+      return;
+    }
+    this.on = !this.on; AudioSys.flashClick(this.on);
+  },
+  // Cambiar las pilas (tecla R o desde el inventario)
+  reload() {
+    if (!Inv.has('battery')) { Hud.msg('No tienes pilas.'); return false; }
+    if (this.battery > 90) { Hud.msg('La linterna aún tiene carga.'); return false; }
+    Inv.take('battery'); this.battery = Math.min(100, this.battery + CONFIG.BATTERY_PACK); this.warned = false;
+    AudioSys.batterySwap(); Hud.msg('Cambias las pilas de la linterna.'); Save.write();
+    return true;
+  },
   update(dt, cam, time) {
+    if (this.on && Game.state === 'playing' && !Game.busy) {
+      this.battery = Math.max(0, this.battery - CONFIG.BATTERY_DRAIN * dt);
+      if (this.battery < 15 && !this.warned) { this.warned = true; Hud.msg('La linterna se está quedando sin pilas…'); }
+      if (this.battery <= 0) { this.on = false; AudioSys.flashClick(false); Hud.msg('La linterna se ha apagado. Sin pilas.'); }
+    }
     const fwd = _v.set(0, 0, -1).applyQuaternion(cam.quaternion);
     this.dir.lerp(fwd, 1 - Math.exp(-CONFIG.FLASH_LAG * dt)).normalize();
     this.level += ((this.on ? 1 : 0) - this.level) * (1 - Math.exp(-25 * dt));
+    const low = this.battery < 15;
     this.flickT -= dt;
-    if (this.flickT <= 0) { this.flickT = rand(0.05, 0.12); this.flick = Math.random() < 0.025 ? rand(0.35, 0.7) : rand(0.96, 1.0); }
+    if (this.flickT <= 0) {
+      this.flickT = rand(0.05, 0.12);
+      this.flick = Math.random() < (low ? 0.16 : 0.025) ? rand(low ? 0.05 : 0.35, 0.7) : rand(0.96, 1.0);
+    }
+    const weak = this.battery < 25 ? 0.45 + 0.55 * (this.battery / 25) : 1;
     const L = World.flash;
     const off = new THREE.Vector3(0.16, -0.22, 0).applyQuaternion(cam.quaternion);
     L.position.copy(cam.position).add(off);
     World.flashTarget.position.copy(L.position).add(this.dir);
-    L.intensity = CONFIG.FLASH_INTENSITY * this.level * this.flick * (0.97 + Math.sin(time * 31) * 0.015);
+    L.intensity = CONFIG.FLASH_INTENSITY * this.level * this.flick * weak * (0.97 + Math.sin(time * 31) * 0.015);
   },
 };
-
+// ==== src/gameplay/items.js ====
+/* =====================================================================
+   OBJETOS — definición, iconos dibujados en canvas y bolsa del jugador
+   ===================================================================== */
+const ITEMS = {
+  coins:   { name: 'Monedas', jp: '小銭', desc: 'Tres monedas de 100 yenes que salieron por la devolución de la máquina expendedora.' },
+  ticket:  { name: 'Billete', jp: 'きっぷ', desc: 'Billete sencillo de 210 yenes comprado en la máquina. Impreso: 0:42.' },
+  key:     { name: 'Llave de mantenimiento', jp: '鍵', desc: 'Llave con una etiqueta de plástico: «ホーム西 扉» — andén, puerta oeste.' },
+  fuse:    { name: 'Fusible', jp: 'ヒューズ', desc: 'Fusible cerámico de 30 A. Sigue intacto.' },
+  punch:   { name: 'Tenaza de revisor', jp: '改札鋏', desc: 'Una tenaza de perforar billetes. Está fría, como si nadie la hubiera tocado en años.', use: () => punchTicket() },
+  punched: { name: 'Billete perforado', jp: '入鋏済みきっぷ', desc: 'El billete tiene ahora la muesca del revisor. Válido para el último tren.' },
+  battery: { name: 'Pilas', jp: '電池', desc: 'Pilas para la linterna. Úsalas desde aquí o pulsando R.', stack: true, use: () => Flashlight.reload() },
+};
+// Iconos (canvas → dataURL, se generan una sola vez)
+const ItemIcon = {
+  cache: {},
+  get(id) {
+    if (this.cache[id]) return this.cache[id];
+    const cv = document.createElement('canvas'); cv.width = cv.height = 96; const g = cv.getContext('2d');
+    g.lineCap = 'round'; g.lineJoin = 'round';
+    const draw = {
+      coins() {
+        for (const [x, y] of [[36, 58], [58, 44], [44, 34]]) {
+          g.fillStyle = '#8a8f93'; g.beginPath(); g.ellipse(x, y + 4, 22, 20, 0, 0, PI * 2); g.fill();
+          g.fillStyle = '#c9cfd3'; g.beginPath(); g.ellipse(x, y, 22, 20, 0, 0, PI * 2); g.fill();
+          g.strokeStyle = '#9aa0a4'; g.lineWidth = 2; g.beginPath(); g.ellipse(x, y, 16, 14, 0, 0, PI * 2); g.stroke();
+        }
+        txt(g, '100', 44, 35, 13, '#6c7276', { font: EN, align: 'center' });
+      },
+      ticket(punched) {
+        g.save(); g.translate(48, 48); g.rotate(-0.25);
+        g.fillStyle = '#e9d9a8'; g.fillRect(-36, -20, 72, 40); g.fillStyle = '#c58a3a'; g.fillRect(-36, -20, 72, 7);
+        txt(g, 'きっぷ', -26, 2, 13, '#3a2a1a'); txt(g, '210', 26, 10, 12, '#3a2a1a', { font: EN, align: 'right' });
+        g.fillStyle = '#5a4a3a'; g.fillRect(-26, 12, 30, 2);
+        if (punched) { g.globalCompositeOperation = 'destination-out'; g.beginPath(); g.moveTo(18, -20); g.lineTo(28, -20); g.lineTo(23, -11); g.fill(); g.globalCompositeOperation = 'source-over'; }
+        g.restore();
+      },
+      key() {
+        g.strokeStyle = '#b8a46a'; g.lineWidth = 7; g.beginPath(); g.arc(30, 40, 13, 0, PI * 2); g.stroke();
+        g.fillStyle = '#b8a46a'; g.fillRect(41, 37, 40, 7); g.fillRect(66, 44, 5, 10); g.fillRect(74, 44, 5, 7);
+        g.fillStyle = '#d24a3a'; g.fillRect(14, 58, 24, 16); txt(g, '西', 26, 66, 12, '#fff', { align: 'center' });
+        g.strokeStyle = '#777'; g.lineWidth = 1.5; g.beginPath(); g.moveTo(26, 52); g.lineTo(26, 58); g.stroke();
+      },
+      fuse() {
+        g.save(); g.translate(48, 48); g.rotate(-0.6);
+        g.fillStyle = '#e8e4da'; g.fillRect(-26, -12, 52, 24); g.fillStyle = '#a7a9ab'; g.fillRect(-38, -14, 12, 28); g.fillRect(26, -14, 12, 28);
+        txt(g, '30A', 0, 0, 12, '#444', { font: EN, align: 'center' }); g.restore();
+      },
+      punch() {
+        g.strokeStyle = '#8d9296'; g.lineWidth = 8; g.beginPath(); g.moveTo(20, 76); g.lineTo(52, 36); g.moveTo(40, 80); g.lineTo(58, 40); g.stroke();
+        g.fillStyle = '#6c7175'; g.beginPath(); g.arc(56, 38, 9, 0, PI * 2); g.fill();
+        g.fillStyle = '#9aa0a4'; g.beginPath(); g.moveTo(58, 30); g.lineTo(82, 18); g.lineTo(86, 26); g.lineTo(64, 42); g.fill();
+      },
+      punched() { draw.ticket(true); },
+      battery() {
+        for (const x of [30, 58]) {
+          g.fillStyle = '#2a2d30'; g.fillRect(x - 11, 26, 22, 50); g.fillStyle = '#c8a03a'; g.fillRect(x - 11, 26, 22, 14);
+          g.fillStyle = '#9aa0a4'; g.fillRect(x - 4, 20, 8, 6); txt(g, '+', x, 33, 12, '#2a2d30', { font: EN, align: 'center' });
+        }
+      },
+    };
+    (draw[id] || draw.coins)();
+    return (this.cache[id] = cv.toDataURL());
+  },
+};
+const Inv = {
+  items: [],             // [{ id, n }]
+  find(id) { return this.items.find((s) => s.id === id); },
+  has(id) { const s = this.find(id); return !!s && s.n > 0; },
+  count(id) { const s = this.find(id); return s ? s.n : 0; },
+  add(id, n = 1) {
+    const s = this.find(id);
+    if (s) s.n += n; else this.items.push({ id, n });
+    Hud.pickup(id, n); Inventory.render(); Save.write();
+  },
+  take(id, n = 1) {
+    const s = this.find(id); if (!s) return false;
+    s.n -= n; if (s.n <= 0) this.items.splice(this.items.indexOf(s), 1);
+    Inventory.render(); return true;
+  },
+  load(list) { this.items = Array.isArray(list) ? list.filter((s) => ITEMS[s.id]).map((s) => ({ id: s.id, n: s.n | 0 || 1 })) : []; },
+};
+// ==== src/gameplay/inventory.js ====
+/* =====================================================================
+   INVENTARIO (interfaz) — objetos y notas encontradas. Tab / I / botón
+   ===================================================================== */
+const Inventory = {
+  tab: 'items', sel: null,
+  show(tab) {
+    if (!Game.openUI('inv')) return;
+    if (tab) this.tab = tab;
+    $('inv').classList.remove('hidden'); this.render();
+  },
+  hide() { $('inv').classList.add('hidden'); },
+  render() {
+    const root = $('inv'); if (!root || root.classList.contains('hidden')) return;
+    root.querySelectorAll('[data-tab]').forEach((b) => b.classList.toggle('on', b.dataset.tab === this.tab));
+    const list = $('invList'), info = $('invInfo'); list.innerHTML = ''; info.innerHTML = '';
+    if (this.tab === 'items') {
+      if (!Inv.items.some((s) => s.id === this.sel)) this.sel = Inv.items[0] ? Inv.items[0].id : null;
+      for (let i = 0; i < 8; i++) {
+        const s = Inv.items[i], el = document.createElement('button'); el.className = 'slot';
+        if (s) {
+          el.innerHTML = `<img src="${ItemIcon.get(s.id)}" alt="">` + (s.n > 1 ? `<b>${s.n}</b>` : '');
+          el.classList.toggle('on', s.id === this.sel);
+          el.addEventListener('click', () => { this.sel = s.id; this.render(); });
+        } else el.disabled = true;
+        list.appendChild(el);
+      }
+      const it = this.sel && ITEMS[this.sel];
+      if (it) {
+        info.innerHTML = `<h4>${it.name} <span>${it.jp}</span></h4><p>${it.desc}</p>`;
+        if (it.use) { const b = document.createElement('button'); b.className = 'm sm'; b.textContent = 'Usar'; b.addEventListener('click', () => { it.use(); this.render(); }); info.appendChild(b); }
+      } else info.innerHTML = '<p class="dim">No llevas nada.</p>';
+      const bat = document.createElement('div'); bat.className = 'bat';
+      bat.innerHTML = `linterna <i><s style="width:${Flashlight.battery.toFixed(0)}%"></s></i> ${Flashlight.battery.toFixed(0)}%`;
+      info.appendChild(bat);
+    } else {
+      list.classList.add('notes');
+      if (!Notes.found.length) info.innerHTML = '<p class="dim">Aún no has encontrado ninguna nota.</p>';
+      for (const id of Notes.found) {
+        const n = NOTES[id], el = document.createElement('button'); el.className = 'noteRow'; el.innerHTML = `${n.title}<span>${n.place}</span>`;
+        el.addEventListener('click', () => { Game.closeUI(true); Notes.read(id, true); });
+        list.appendChild(el);
+      }
+    }
+    list.classList.toggle('notes', this.tab === 'notes');
+  },
+};
+function bindGameplayUI() {
+  document.querySelectorAll('#inv [data-tab]').forEach((b) => b.addEventListener('click', () => { Inventory.tab = b.dataset.tab; Inventory.render(); }));
+  for (const id of ['invClose', 'noteClose']) $(id).addEventListener('click', (e) => { e.stopPropagation(); Game.closeUI(); });
+  $('noteView').addEventListener('click', (e) => { if (e.target.id === 'noteView') Game.closeUI(); });
+  Keypad.bind();
+}
+// ==== src/gameplay/notes.js ====
+/* =====================================================================
+   NOTAS — la historia se cuenta en papeles encontrados por la estación
+   ===================================================================== */
+const NOTES = {
+  n1: { title: 'Nota en el móvil', place: 'Salida 2', body: [
+    '<i>0:41</i> — Me he vuelto a quedar dormido en el tren. Me ha despertado el revisor en Sanjo, o eso creo: cuando abrí los ojos el vagón estaba vacío.',
+    'El último tren ya se ha ido. Todo está cerrado, pero la entrada del metro sigue abierta y abajo hay luz.',
+    'La batería del móvil está muerta. Solo tengo la linterna de la oficina. Tengo que ahorrarla.',
+  ] },
+  n2: { title: 'Aviso interno', place: 'Escalera, rellano inferior', body: [
+    '<b>係員各位</b> — A todo el personal:',
+    'Se ruega devolver la llave de la <b>puerta de mantenimiento del andén (lado oeste)</b> a su gancho después de cada turno. Ya ha desaparecido dos veces.',
+    'Recordamos también que, tras el último servicio, <u>nadie</u> debe quedarse en el andén. Si oyen pasos en el túnel, no respondan. — El jefe de estación',
+  ] },
+  n3: { title: 'Horario arrancado', place: 'Vestíbulo', body: [
+    '<b>最終電車 — Último tren: 0:42</b>',
+    'Los billetes se compran en las máquinas con monedas (no aceptan billetes de banco a esta hora). Los torniquetes no se abren sin billete.',
+    'Alguien ha escrito encima, con bolígrafo, muchas veces: <i>0:42 0:42 0:42 0:42 0:42</i>',
+  ] },
+  n4: { title: 'Diario de alguien', place: 'Andén, banco', body: [
+    'No sé cuántas veces he bajado estas escaleras. El panel siempre dice que el próximo tren llega pronto. Nunca llega.',
+    'Si te quedas quieto a oscuras, se oyen pasos que no son los tuyos. Siguen andando cuando tú te paras.',
+    '<b>No apagues la luz.</b> Y si ves a alguien al fondo del andén, no lo mires mucho tiempo.',
+  ] },
+  n5: { title: 'Parte de obra', place: 'Túnel', body: [
+    'Obra n.º 7 — Prolongación del túnel oeste.',
+    'La puerta del tabique es eléctrica. Se ha cortado la corriente del cuadro (<b>falta el fusible</b>). El de repuesto se dejó en una caja <b>dentro del andamio</b>, junto a los conos.',
+    'Desde que empezamos a excavar, los obreros del turno de noche dicen que oyen un tren. Aquí no pasa ningún tren.',
+  ] },
+  n6: { title: 'Papel en el quiosco', place: 'Galería', body: [
+    'Todos los relojes de la estación se pararon a la misma hora. Los de la galería también. El de la entrada también. El mío también.',
+    'La puerta de cristal de arriba tiene un teclado. El guarda decía que la clave era <b>"la hora en que se paró todo"</b>, con cuatro cifras.',
+    'Ya no recuerdo cuándo llegué. Solo recuerdo esa hora.',
+  ] },
+  n7: { title: 'Diario del revisor', place: 'Atrio', body: [
+    'Esa noche perforé su billete como a todos. Se había dormido con la cabeza contra la ventana. Le desperté en Sanjo y me dijo que solo quería llegar a casa.',
+    'El tren de las 0:42 no llegó a la terminal. Desde entonces, cada noche, alguien baja estas escaleras buscando el último tren.',
+    'Dejo la tenaza aquí. Si llevas un billete, perfóralo. <b>Vuelve al andén.</b> Él te estará esperando.',
+  ] },
+  n8: { title: 'Mi propia letra', place: 'Salida 2', body: [
+    'Esta letra es la mía. No recuerdo haberlo escrito.',
+    '<i>«Ya has estado aquí antes. El tren solo para si llevas el billete marcado. No mires atrás en la escalera.»</i>',
+  ] },
+};
+const NOTE_IDS = Object.keys(NOTES);
+const Notes = {
+  found: [], cur: null,
+  load(list) { this.found = Array.isArray(list) ? list.filter((id) => NOTES[id]) : []; },
+  read(id, fromInv) {
+    const n = NOTES[id]; if (!n) return;
+    if (!Game.openUI('note')) return;
+    if (!this.found.includes(id)) { this.found.push(id); if (!fromInv) Hud.msg('Nota añadida al inventario', 2.5); }
+    if (!Flags['note_' + id]) setFlag('note_' + id);
+    this.cur = id; AudioSys.paper();
+    $('noteTitle').textContent = n.title;
+    $('noteBody').innerHTML = n.body.map((p) => `<p>${p}</p>`).join('');
+    $('noteView').classList.remove('hidden');
+    Save.write();
+  },
+  hide() { $('noteView').classList.add('hidden'); this.cur = null; },
+};
+// ==== src/gameplay/keypad.js ====
+/* =====================================================================
+   TECLADO NUMÉRICO — puerta de cristal de la galería (clave de 4 cifras)
+   ===================================================================== */
+const Keypad = {
+  code: '', answer: '0042', onOk: null, lockT: 0,
+  open(answer, onOk) {
+    if (!Game.openUI('keypad')) return;
+    this.answer = answer; this.onOk = onOk; this.code = ''; this.draw();
+    $('keypad').classList.remove('hidden');
+  },
+  hide() { $('keypad').classList.add('hidden'); },
+  draw() { $('kpDisp').textContent = (this.code + '____').slice(0, 4).split('').join(' '); },
+  press(k) {
+    if (performance.now() < this.lockT) return;
+    if (k === 'C') { this.code = ''; AudioSys.keyBeep(); this.draw(); return; }
+    if (k === 'OK') { this.check(); return; }
+    if (this.code.length >= 4) return;
+    this.code += k; AudioSys.keyBeep(); this.draw();
+    if (this.code.length === 4) setTimeout(() => this.check(), 250);
+  },
+  check() {
+    if (Game.ui !== 'keypad') return;
+    const el = $('kpDisp');
+    if (this.code === this.answer) {
+      AudioSys.keyBeep(true); el.classList.add('ok');
+      setTimeout(() => { el.classList.remove('ok'); Game.closeUI(); if (this.onOk) this.onOk(); }, 650);
+    } else {
+      AudioSys.keyBeep(false); el.classList.add('bad'); this.lockT = performance.now() + 700;
+      setTimeout(() => { el.classList.remove('bad'); this.code = ''; this.draw(); }, 700);
+    }
+  },
+  // Teclado físico: cifras, retroceso, Enter. Devuelve true si consumió la tecla
+  key(e) {
+    const m = /^(?:Digit|Numpad)(\d)$/.exec(e.code);
+    if (m) { this.press(m[1]); return true; }
+    if (e.code === 'Backspace') { this.code = this.code.slice(0, -1); this.draw(); return true; }
+    if (e.code === 'Enter' || e.code === 'NumpadEnter') { this.check(); return true; }
+    return false;
+  },
+  bind() {
+    const g = $('kpKeys');
+    for (const k of ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'C', '0', 'OK']) {
+      const b = document.createElement('button'); b.textContent = k; b.className = k.length > 1 || k === 'C' ? 'fn' : '';
+      b.addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); this.press(k); });
+      g.appendChild(b);
+    }
+    $('kpClose').addEventListener('click', (e) => { e.stopPropagation(); Game.closeUI(); });
+  },
+};
+// ==== src/gameplay/sanity.js ====
+/* =====================================================================
+   TENSIÓN — sube a oscuras sin linterna y con los sustos; baja con la luz.
+   No mata: deforma la imagen, acelera el latido, trae susurros y visiones.
+   ===================================================================== */
+const WHISPERS = ['«…まだ…»', '«…ここにいる…»', '«…0:42…»', '«…no mires atrás…»', '«…終電…»', '«…¿por qué bajaste?…»', '«…despierta…»'];
+const _eye = new THREE.Vector3();
+const Sanity = {
+  t: 0, vis: 0, hit: 0, pulse: 0, shake: 0, light: 1, sampleT: 0, hbT: 1, whT: 30, hallT: 40, dark: false,
+  reset(v = 0) { this.t = v; this.vis = v; this.hit = 0; this.pulse = 0; this.shake = 0; this.whT = rand(25, 40); this.hallT = rand(35, 60); this.hbT = 1; },
+  // Susto: sube la tensión de golpe, destello rojo y temblor
+  scare(amount = 0.25, shake = 0.8) { this.t = Math.min(1, this.t + amount); this.hit = 1; this.shake = Math.max(this.shake, shake); },
+  // Luz que llega a los ojos del jugador: horneada (escalada por los apagones) + luces reales
+  lightLevel() {
+    const z = Zones.current, p = Player.pos; _eye.set(p.x, p.y + 1.2, p.z);
+    const b = z.lightAt([_eye.x, _eye.y, _eye.z]);
+    let l = (0.2126 * b[0] + 0.7152 * b[1] + 0.0722 * b[2]) * BakeK.value;
+    for (const L of World.lights) {
+      if (!L.visible || L.intensity <= 0) continue;
+      const d2 = L.position.distanceToSquared(_eye), R2 = L.distance * L.distance; if (d2 >= R2) continue;
+      const q = d2 / R2, win = (1 - q * q) ** 2, c = L.color;
+      l += (0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b) * L.intensity * win / (d2 + 0.3) / PI * 0.5;
+    }
+    return l;
+  },
+  update(dt) {
+    const z = Zones.current; if (!z) return;
+    const act2 = !!Flags.act2, calm = Game.busy || Game.ui || Game.ending;
+    this.sampleT -= dt;
+    if (this.sampleT <= 0) { this.sampleT = 0.3; this.light = this.lightLevel(); this.dark = this.light < CONFIG.DARK_LEVEL; }
+    if (!calm) {
+      let rate;
+      if (Flashlight.level > 0.5) rate = this.dark ? -0.006 : -CONFIG.TENSION_FALL;
+      else rate = this.dark ? CONFIG.TENSION_RISE * (act2 ? 1.4 : 1) : -CONFIG.TENSION_FALL;
+      this.t = clamp(this.t + rate * dt, act2 ? 0.12 : 0, 1);
+    }
+    this.vis += (this.t - this.vis) * (1 - Math.exp(-1.5 * dt));
+    this.hit = Math.max(0, this.hit - dt * 1.4);
+    this.pulse = Math.max(0, this.pulse - dt * 3.5);
+    this.shake = Math.max(0, this.shake - dt * 1.2, (this.vis - 0.75) * 0.5);
+    if (calm) return;
+    // latido
+    if (this.vis > 0.35) {
+      this.hbT -= dt;
+      if (this.hbT <= 0) { const k = (this.vis - 0.35) / 0.65; this.hbT = lerp(1.15, 0.48, k); AudioSys.heartbeat(0.22 + 0.55 * k); this.pulse = 1; }
+    }
+    // susurros alrededor
+    if (this.t > 0.55) {
+      this.whT -= dt * this.t;
+      if (this.whT <= 0) {
+        this.whT = rand(12, 26); const a = rand(0, PI * 2), r = rand(1.5, 3.5), p = Player.pos;
+        AudioSys.whisper([p.x + Math.cos(a) * r, p.y + 1.5, p.z + Math.sin(a) * r], 0.3 + this.t * 0.2);
+        if (Math.random() < 0.4) Hud.sub(pick(WHISPERS), 2.4);
+      }
+    }
+    // visión fugaz cuando la tensión llega al límite
+    this.hallT -= dt;
+    if (this.t > 0.85 && this.hallT <= 0) { this.hallT = rand(30, 55); Scares.glimpse(); this.t = 0.68; }
+  },
+};
+// ==== src/gameplay/scares.js ====
+/* =====================================================================
+   SUSTOS — sin enemigos: siluetas que desaparecen al mirarlas, apagones,
+   pasos detrás de ti, portazos, teléfonos que suenan... Cada uno, una vez.
+   ===================================================================== */
+function silhouetteCanvas() {
+  const cv = document.createElement('canvas'); cv.width = 128; cv.height = 320; const g = cv.getContext('2d');
+  g.fillStyle = '#fff'; g.shadowColor = '#fff'; g.shadowBlur = 5;
+  g.beginPath(); g.ellipse(64, 34, 17, 22, 0, 0, PI * 2); g.fill();                       // cabeza
+  g.beginPath();                                                                           // cuello, hombros, torso, brazos y piernas
+  g.moveTo(56, 52); g.lineTo(72, 52); g.lineTo(74, 66);
+  g.quadraticCurveTo(102, 70, 106, 92); g.lineTo(110, 176); g.quadraticCurveTo(110, 196, 102, 196); g.lineTo(98, 120);
+  g.lineTo(94, 186); g.lineTo(90, 314); g.lineTo(70, 314); g.lineTo(66, 200); g.lineTo(62, 200); g.lineTo(58, 314); g.lineTo(38, 314);
+  g.lineTo(34, 186); g.lineTo(30, 120); g.lineTo(26, 196); g.quadraticCurveTo(18, 196, 18, 176); g.lineTo(22, 92);
+  g.quadraticCurveTo(26, 70, 54, 66); g.closePath(); g.fill();
+  return cv;
+}
+const _toF = new THREE.Vector3(), _fw = new THREE.Vector3();
+const Scares = {
+  done: {}, fig: null, mesh: null, seqs: [], phone: null, pw: null,
+  init() {
+    const t = new THREE.CanvasTexture(silhouetteCanvas()); t.colorSpace = THREE.SRGBColorSpace;
+    const m = new THREE.MeshLambertMaterial({ map: t, color: 0x2c2c30, alphaTest: 0.45, side: THREE.DoubleSide }); m.userData.shared = true;
+    this.mesh = new THREE.Mesh(new THREE.PlaneGeometry(0.72, 1.8), m); this.mesh.visible = false; World.scene.add(this.mesh);
+  },
+  reset(done) { this.done = done ? { ...done } : {}; this.clear(); },
+  // Corta todo lo que esté en marcha (al cambiar de zona o salir al menú)
+  clear() {
+    if (this.mesh) this.mesh.visible = false; this.fig = null; this.seqs = [];
+    if (this.phone) { this.phone.stop(); this.phone = null; }
+    if (this.pw) { this.pw = null; Power.k = 1; AudioSys.duck(1, 0.5); }
+  },
+  // Línea de tiempo propia (se congela en pausa, a diferencia de setTimeout)
+  after(sec, fn) { this.seqs.push({ t: sec, fn }); },
+  update(dt, cam) {
+    for (let i = this.seqs.length - 1; i >= 0; i--) { const s = this.seqs[i]; s.t -= dt; if (s.t <= 0) { this.seqs.splice(i, 1); s.fn(); } }
+    if (this.pw) {                     // animación de la corriente (apagones)
+      const p = this.pw; Power.k += (p.to - Power.k) * (1 - Math.exp(-p.speed * dt));
+      if (Math.abs(Power.k - p.to) < 0.01) { Power.k = p.to; if (p.to === 1) this.pw = null; }
+    }
+    const f = this.fig; if (!f) return;
+    const M = this.mesh; M.position.copy(f.p); M.position.y += 0.9;
+    M.rotation.set(0, Math.atan2(cam.position.x - M.position.x, cam.position.z - M.position.z), 0);
+    _toF.subVectors(M.position, cam.position); const dist = _toF.length(); _toF.divideScalar(dist || 1);
+    _fw.set(0, 0, -1).applyQuaternion(cam.quaternion);
+    const look = _fw.dot(_toF), lit = Flashlight.level > 0.5 && Flashlight.dir.dot(_toF) > 0.95 && dist < 14;
+    if ((look > 0.975 && dist < 24) || lit) f.seen += dt * (lit ? 3 : 1);
+    f.life -= dt;
+    if (f.seen > f.stare || dist < f.near) this.gone(true);
+    else if (f.life <= 0) this.gone(false);
+  },
+  // Silueta inmóvil en 'p' (pies). Desaparece si la miras fijamente, la alumbras o te acercas
+  apparition(p, o = {}) {
+    if (!this.mesh) return;
+    this.fig = { p: new THREE.Vector3(p[0], p[1], p[2]), seen: 0, stare: o.stare ?? 0.4, near: o.near ?? 3.2, life: o.life ?? 30, scare: o.scare ?? 0.2, quiet: !!o.quiet, onGone: o.onGone || null };
+    this.mesh.visible = true;
+  },
+  gone(seen) {
+    const f = this.fig; if (!f) return; this.fig = null; this.mesh.visible = false;
+    if (seen && !f.quiet) { AudioSys.vanish([f.p.x, f.p.y + 1.5, f.p.z]); Sanity.scare(f.scare, 0.5); }
+    if (f.onGone) f.onGone(seen);
+  },
+  // Visión fugaz delante del jugador (tensión al límite)
+  glimpse() {
+    const z = Zones.current, p = Player.pos;
+    for (let k = 0; k < 6; k++) {
+      const a = Player.yaw + rand(-0.4, 0.4), r = rand(5, 9), x = p.x - Math.sin(a) * r, zz = p.z - Math.cos(a) * r;
+      const g = z.groundTop(x, zz);
+      if (g && Math.abs(g.y - p.y) < 1.5) { this.apparition([x, g.y, zz], { stare: 0.12, near: 4, life: 1.6, scare: 0.08 }); AudioSys.stinger(0.25); return; }
+    }
+    AudioSys.whisper(null, 0.4);
+  },
+  // Apagón general: solo quedan la linterna y los carteles de emergencia
+  blackout(dur = 3.5, onBack) {
+    AudioSys.powerDown(); AudioSys.duck(0.12, 0.15); Sanity.scare(0.15, 0.35);
+    this.pw = { to: 0, speed: 30 };
+    this.after(dur, () => {
+      AudioSys.powerUp(); this.pw = { to: 1, speed: 2.5 };
+      for (const g of Object.values(Zones.current.groups)) Zones.current.flicker(g, false);
+      AudioSys.duck(1, 2.0); if (onBack) onBack();
+    });
+  },
+  // Pasos de alguien que se acerca por detrás y se detiene
+  steps(n = 5, surface = null, gap = 0.55) {
+    const p = Player.pos.clone(), fx = -Math.sin(Player.yaw), fz = -Math.cos(Player.yaw), surf = surface || Player.surface;
+    for (let i = 0; i < n; i++) {
+      const d = 6 - i * 0.6, pos = [p.x - fx * d, p.y + 0.1, p.z - fz * d];
+      this.after(i * gap * rand(0.92, 1.08), () => AudioSys.stepAt(pos, surf));
+    }
+    this.after(n * gap + 0.3, () => Sanity.scare(0.12, 0.2));
+  },
+  slam(pos, v = 0.9) { AudioSys.slam(pos, v); Sanity.scare(0.18, 1.0); },
+  bang(pos) { AudioSys.bang(pos, 4); Sanity.scare(0.15, 0.6); },
+  lampBurst(zone, gid, pos) {
+    const g = zone.groups[gid]; if (!g) return;
+    AudioSys.lampPop(pos); zone.setLevel(g, 0); g.mode = 'none'; zone.flicks = zone.flicks.filter((f) => f.g !== g);
+    Sanity.scare(0.12, 0.4);
+  },
+  phoneStart(pos) { if (!this.phone) this.phone = AudioSys.phoneRing(pos); },
+  phoneAnswer() {
+    if (!this.phone) { AudioSys.click(AudioSys.tmp(1, 0.1), 0.2, 2000); Hud.sub('Silencio. Ni siquiera hay tono.', 3); return; }
+    this.phone.stop(); this.phone = null; AudioSys.phoneVoice();
+    this.after(1.0, () => Hud.sub('«…¿sigues ahí abajo?…»', 3));
+    this.after(3.4, () => Hud.sub('«…el último tren… no ha salido todavía…»', 3.5));
+    this.after(6.0, () => Sanity.scare(0.15, 0.3));
+  },
+};
+// ==== src/gameplay/save.js ====
+/* =====================================================================
+   GUARDADO — automático (al cambiar de zona, recoger algo, leer una nota...)
+   ===================================================================== */
+const SAVE_KEY = 'shuden-go-save-v1';
+const Save = {
+  exists() { try { return !!localStorage.getItem(SAVE_KEY); } catch (e) { return false; } },
+  write() {
+    if (!Game.started || Game.ending || Game.state === 'menu' || !Zones.current) return;
+    const d = { v: 1, zone: Zones.current.id, spawn: Game.spawn, flags: { ...Flags }, inv: Inv.items, battery: +Flashlight.battery.toFixed(1),
+      notes: Notes.found, tension: +Sanity.t.toFixed(2), done: Scares.done, at: Date.now() };
+    try { localStorage.setItem(SAVE_KEY, JSON.stringify(d)); } catch (e) { /* sin almacenamiento */ }
+  },
+  load() { try { const d = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null'); return d && d.v === 1 ? d : null; } catch (e) { return null; } },
+  clear() { try { localStorage.removeItem(SAVE_KEY); } catch (e) { /* nada */ } },
+};
+// ==== src/gameplay/ending.js ====
+/* =====================================================================
+   FINAL — con el billete perforado, el último tren por fin llega al andén
+   ===================================================================== */
+function trainSideCanvas() {
+  return signCanvas(2048, 256, (g, w, h) => {
+    g.fillStyle = '#3a4038'; g.fillRect(0, 0, w, h);
+    g.fillStyle = '#2a7a4a'; g.fillRect(0, 196, w, 14);                         // franja verde (Keihan)
+    for (let k = 0; k < 4; k++) {
+      const x0 = k * 512;
+      g.fillStyle = '#1c201c'; g.fillRect(x0 + 40, 60, 60, 190); g.fillRect(x0 + 412, 60, 60, 190);    // puertas
+      g.fillStyle = '#fff4dc'; g.fillRect(x0 + 50, 74, 40, 70); g.fillRect(x0 + 422, 74, 40, 70);
+      const gr = g.createLinearGradient(0, 70, 0, 170); gr.addColorStop(0, '#fff6e2'); gr.addColorStop(1, '#ffe2b0');
+      g.fillStyle = gr; g.fillRect(x0 + 120, 70, 272, 100);                     // ventanas
+      g.fillStyle = '#2e2a24'; for (const x of [x0 + 210, x0 + 300]) g.fillRect(x, 70, 6, 100);
+      g.fillStyle = 'rgba(90,60,40,0.55)'; g.fillRect(x0 + 120, 150, 272, 20);   // respaldos de los asientos
+    }
+    txt(g, '終点', 1300, 40, 30, '#ffb060');
+  });
+}
+// Interior del vagón visto a través de la puerta abierta
+function trainInteriorCanvas() {
+  return signCanvas(512, 512, (g, w, h) => {
+    const vx = w / 2, vy = h * 0.46;
+    g.fillStyle = '#d9cdb4'; g.fillRect(0, 0, w, h);
+    g.fillStyle = '#efe6d2'; g.beginPath(); g.moveTo(0, 0); g.lineTo(w, 0); g.lineTo(vx + 70, vy - 60); g.lineTo(vx - 70, vy - 60); g.fill();           // techo
+    for (const s of [-1, 1]) { g.fillStyle = '#fff8e6'; g.beginPath(); g.moveTo(vx + s * 150, 0); g.lineTo(vx + s * 190, 0); g.lineTo(vx + s * 22, vy - 60); g.lineTo(vx + s * 14, vy - 60); g.fill(); }  // luces
+    g.fillStyle = '#7a7466'; g.beginPath(); g.moveTo(0, h); g.lineTo(w, h); g.lineTo(vx + 70, vy + 50); g.lineTo(vx - 70, vy + 50); g.fill();        // suelo
+    for (const s of [-1, 1]) {
+      g.fillStyle = '#1e1a16'; g.beginPath(); g.moveTo(vx + s * w * 0.5, 70); g.lineTo(vx + s * 70, vy - 50); g.lineTo(vx + s * 70, vy); g.lineTo(vx + s * w * 0.5, 250); g.fill();   // ventanas negras
+      g.fillStyle = '#2a6a4a'; g.beginPath(); g.moveTo(vx + s * w * 0.5, 330); g.lineTo(vx + s * 70, vy + 14); g.lineTo(vx + s * 70, vy + 34); g.lineTo(vx + s * w * 0.5, 420); g.fill();  // asientos verdes
+      g.strokeStyle = '#b8b4a8'; g.lineWidth = 3; for (let k = 0; k < 5; k++) { const t = k / 5, x = lerp(vx + s * w * 0.45, vx + s * 75, t), y0 = lerp(30, vy - 55, t); g.beginPath(); g.moveTo(x, y0); g.lineTo(x, y0 + lerp(60, 10, t)); g.stroke(); g.beginPath(); g.arc(x, y0 + lerp(68, 12, t), lerp(9, 2, t), 0, PI * 2); g.stroke(); }  // asideros
+    }
+    g.fillStyle = '#3a3630'; g.fillRect(vx - 70, vy - 60, 140, 110); g.fillStyle = '#ffb060'; txt(g, '次は 終点', vx, vy - 40, 18, '#ffb060', { align: 'center' });
+    const gr = g.createRadialGradient(vx, vy, 20, vx, vy, w * 0.8); gr.addColorStop(0, 'rgba(0,0,0,0)'); gr.addColorStop(1, 'rgba(40,24,10,0.45)'); g.fillStyle = gr; g.fillRect(0, 0, w, h);
+  });
+}
+const Ending = {
+  phase: null, t: 0, train: null, X0: -150, XS: -1.4, DUR: 9,
+  reset() { this.phase = null; this.t = 0; Game.ending = false; if (this.train) { World.scene.remove(this.train); this.train.geometry.dispose(); this.train.material.map.dispose(); this.train.material.dispose(); this.train = null; } $('ending').classList.add('hidden'); },
+  // Disparador del andén (zona 4)
+  arrive() {
+    if (this.phase || !Flags.act2 || !Inv.has('punched')) return;
+    this.phase = 'call'; AudioSys.chime();
+    Hud.sub('まもなく、電車がまいります。— Va a efectuar su entrada el tren.', 4.5);
+    Scares.after(4.5, () => {
+      AudioSys.trainArrive(this.DUR);
+      const t = toTex(trainSideCanvas(), { repeat: true }); t.repeat.set(5, 1);
+      const m = new THREE.MeshBasicMaterial({ map: t, color: new THREE.Color(1.25, 1.25, 1.25) });
+      this.train = new THREE.Mesh(new THREE.PlaneGeometry(100, 3.6), m);
+      this.train.position.set(this.X0, 1.0, 3.6); this.train.rotation.y = PI; World.scene.add(this.train);
+      this.phase = 'moving'; this.t = 0;
+    });
+  },
+  update(dt) {
+    if (this.phase !== 'moving' || !this.train) return;
+    this.t += dt; const k = Math.min(1, this.t / this.DUR), e = 1 - Math.pow(1 - k, 2.6);
+    const x = lerp(this.X0, this.XS, e); this.train.position.x = x;
+    const L = World.lights[0];           // la luz del tren barre el andén a través de las puertas
+    L.position.set(clamp(Player.pos.x + (x - Player.pos.x) * 0.15, -30, 20), 1.6, 3.9); L.color.setRGB(1, 0.86, 0.66); L.distance = 16; L.userData.base = 9 * Math.min(1, k * 3); L.userData.lv = 1;
+    Sanity.shake = Math.max(Sanity.shake, 0.25 * (1 - k));
+    if (k >= 1) {
+      this.phase = 'stopped';
+      Scares.after(2.2, () => { setFlag('trainHere'); AudioSys.doorOpen([-1.4, 1, 3.2], 'gate'); Hud.msg('Las puertas del tren se abren.', 4); });
+    }
+  },
+  async board() {
+    if (Game.busy || Game.ending) return;
+    Game.ending = true; Game.busy = true; Hud.show(false); Touch.show(false); Hud.label(null); $('dot').classList.remove('on');
+    AudioSys.doorOpen([-1.4, 1, 3.2], 'gate');
+    await Game.fadeTo(1, 2.5);
+    AudioSys.setWorld(0, 2); Music.fadeOut();
+    if (document.pointerLockElement) document.exitPointerLock();
+    Save.clear();
+    const el = $('ending'); el.classList.remove('hidden', 'done'); void el.offsetWidth; el.classList.add('run');
+    Game.busy = false;
+  },
+  async toMenu() {
+    $('ending').classList.add('hidden'); $('ending').classList.remove('run');
+    Game.state = 'playing';
+    await Game.quit();                      // (no guarda: Game.ending sigue activo)
+    this.reset(); Save.clear(); Game.resetRun(null); refreshMenu();
+  },
+};
+// Atril del atrio: con la tenaza se perfora el billete y empieza el segundo acto
+function punchTicket() {
+  if (!Inv.has('ticket')) { Hud.msg('Necesitas un billete que perforar.'); return; }
+  Inv.take('ticket'); Inv.take('punch'); AudioSys.click(AudioSys.tmp(1, 0.4), 0.5, 1800);
+  Hud.msg('Perforas el billete. El chasquido resuena por todo el atrio.', 4);
+  Inv.add('punched');
+  Scares.after(2.0, () => Scares.blackout(3.2, () => {
+    Hud.sub('«…vuelve al andén…»', 4); AudioSys.whisper(null, 0.45, 2.4);
+    Scares.apparition([-6.0, 0, 4.4], { stare: 0.3, near: 2.5, life: 20 });
+  }));
+  Scares.after(2.6, () => { setFlag('act2'); Save.write(); });
+}
 // ==== src/zones/assets/signs.js ====
 /* =====================================================================
    CARTELES (canvas) — texto japonés real
@@ -2764,6 +3748,119 @@ Object.assign(Signs, {
   }),
 });
 
+// ==== src/zones/assets/signs-horror.js ====
+/* =====================================================================
+   CARTELES Y CALCOMANÍAS DE TERROR — notas, anomalías del 2º acto, suciedad
+   ===================================================================== */
+// Mancha de spray / tinta con bordes irregulares
+function blot(g, x, y, r, color, R) {
+  g.fillStyle = color;
+  for (let i = 0; i < 26; i++) { const a = R() * PI * 2, d = R() * r; g.globalAlpha = 0.08 + R() * 0.2; g.beginPath(); g.arc(x + Math.cos(a) * d, y + Math.sin(a) * d, r * (0.2 + R() * 0.5), 0, PI * 2); g.fill(); }
+  g.globalAlpha = 1;
+}
+Object.assign(Signs, {
+  // Atlas de 4 papeles (notas) con letra a mano simulada
+  paper: () => signCanvas(1024, 330, (g, w, h) => {
+    g.clearRect(0, 0, w, h);
+    for (let k = 0; k < 4; k++) {
+      const R = mulberry32(80 + k), x0 = k * 256 + 8, y0 = 6, pw = 240, ph = 316;
+      g.save(); g.translate(x0 + pw / 2, y0 + ph / 2); g.rotate((R() - 0.5) * 0.04); g.translate(-pw / 2, -ph / 2);
+      g.fillStyle = ['#ece6d6', '#e6e2d2', '#f0ead8', '#dcd6c4'][k]; g.fillRect(0, 0, pw, ph);
+      g.fillStyle = 'rgba(0,0,0,0.06)'; g.fillRect(0, ph * 0.5, pw, 2);                         // doblez
+      g.strokeStyle = 'rgba(40,40,60,0.75)'; g.lineWidth = 2;
+      for (let r = 0; r < 11; r++) {
+        let x = 16, y = 28 + r * 24; const end = 16 + (pw - 32) * (0.5 + R() * 0.5);
+        g.beginPath(); g.moveTo(x, y);
+        while (x < end) { x += 4 + R() * 7; g.lineTo(x, y + (R() - 0.5) * 7); }
+        g.stroke();
+      }
+      blot(g, pw * R(), ph * R(), 16, 'rgba(90,70,40,1)', R);                                  // manchas de café/humedad
+      g.restore();
+    }
+  }),
+  canopyAct2() {
+    const cv = Signs.canopy(), g = cv.getContext('2d');
+    const gr = g.createLinearGradient(0, 0, 0, 136); gr.addColorStop(0, '#fbfbf8'); gr.addColorStop(1, '#e8eae6'); g.fillStyle = gr; g.fillRect(2300, 0, 620, 136);
+    txt(g, '終着駅', 2330, 54, 76, '#2a0c0c', { weight: '900' }); txt(g, 'Terminal.', 2336, 112, 32, '#5a1a1a', { font: EN, weight: '600' });
+    const R = mulberry32(13); blot(g, 2700, 70, 40, '#5a0a08', R);
+    return cv;
+  },
+  ledBoardAct2: () => signCanvas(1024, 136, (g, w, h) => {
+    g.fillStyle = '#060504'; g.fillRect(0, 0, w, h);
+    txt(g, 'あなたはまだここにいます', w / 2, 44, 46, '#ff3a1a', { align: 'center' });
+    txt(g, 'You are still here.', w / 2, 100, 36, '#ff3a1a', { font: 'monospace', align: 'center' });
+    g.fillStyle = 'rgba(6,5,4,0.75)'; for (let x = 0; x < w; x += 4) g.fillRect(x, 0, 1.5, h); for (let y = 0; y < h; y += 4) g.fillRect(0, y, w, 1.5);
+  }),
+  platformNameAct2: () => signCanvas(1024, 192, (g, w, h) => {
+    g.fillStyle = '#f4f4ef'; g.fillRect(0, 0, w, h); g.fillStyle = '#7a1a1a'; g.fillRect(0, h - 22, w, 22);
+    g.fillStyle = '#1a1a1a'; g.beginPath(); g.arc(90, 86, 58, 0, PI * 2); g.fill(); txt(g, '0', 90, 90, 80, '#fff', { font: EN, align: 'center', weight: '900' });
+    txt(g, '番線', 170, 86, 46, '#1a1a1a'); txt(g, '終点 方面', 340, 66, 54, '#1a1a1a'); txt(g, 'for Terminal', 344, 132, 30, '#444', { font: EN, weight: '500' });
+    txt(g, 'しゅうちゃくえき', 760, 60, 24, '#555'); txt(g, '終着駅', 760, 110, 50, '#1a1a1a');
+  }),
+  // Póster tachado con letras rojas (2º acto, escalera)
+  scrawl: () => signCanvas(300, 420, (g, w, h) => {
+    g.fillStyle = '#d8d2c4'; g.fillRect(0, 0, w, h); const R = mulberry32(31);
+    for (let i = 0; i < 6; i++) blot(g, R() * w, R() * h, 50, '#2a2420', R);
+    g.save(); g.translate(w / 2, h / 2); g.rotate(-0.06);
+    txt(g, 'まだ', 0, -130, 80, '#8a0e0a', { align: 'center', weight: '900' }); txt(g, 'ここに', 0, -20, 80, '#8a0e0a', { align: 'center', weight: '900' }); txt(g, 'いる', 0, 100, 80, '#8a0e0a', { align: 'center', weight: '900' });
+    g.restore();
+    g.fillStyle = 'rgba(120,10,8,0.8)'; for (let i = 0; i < 9; i++) { const x = 40 + R() * 220; g.fillRect(x, 300 + R() * 40, 3, 30 + R() * 80); }
+  }),
+  // Cuadro eléctrico de la obra
+  fuseBox: () => signCanvas(256, 384, (g, w, h) => {
+    g.fillStyle = '#8c9296'; g.fillRect(0, 0, w, h); g.fillStyle = '#6c7276'; g.fillRect(10, 10, w - 20, h - 20);
+    g.fillStyle = '#f2c230'; g.fillRect(24, 22, w - 48, 44); txt(g, '分電盤 ⚡', w / 2, 46, 26, '#1a1a1a', { align: 'center' });
+    for (let i = 0; i < 4; i++) { g.fillStyle = '#2a2d30'; g.fillRect(40 + i * 46, 100, 34, 90); g.fillStyle = i === 2 ? '#111' : '#d8d8d0'; g.fillRect(46 + i * 46, 112, 22, 30); }
+    g.strokeStyle = '#d42a2f'; g.lineWidth = 4; g.strokeRect(126, 96, 42, 98); txt(g, 'FUSE 30A', w / 2, 220, 20, '#fff', { font: EN, align: 'center' });
+    fineLines(g, 30, 260, w - 60, 90, 8, 'rgba(255,255,255,0.4)', 4);
+  }),
+  keypadPanel: () => signCanvas(160, 256, (g, w, h) => {
+    g.fillStyle = '#3a4044'; g.fillRect(0, 0, w, h); g.fillStyle = '#0c1a12'; g.fillRect(16, 16, w - 32, 40);
+    txt(g, '- - - -', w / 2, 37, 22, '#3a9a60', { font: 'monospace', align: 'center' });
+    for (let i = 0; i < 12; i++) { const c = i % 3, r = Math.floor(i / 3); g.fillStyle = '#b8bec2'; g.fillRect(22 + c * 40, 76 + r * 42, 32, 32); txt(g, '123456789*0#'[i], 38 + c * 40, 93 + r * 42, 18, '#222', { font: EN, align: 'center' }); }
+  }),
+  // ---- calcomanías con alfa (suciedad, pintadas, grietas, cinta) ----
+  tally: () => signCanvas(512, 256, (g, w, h) => {
+    g.clearRect(0, 0, w, h); const R = mulberry32(57); g.strokeStyle = 'rgba(20,18,16,0.85)'; g.lineCap = 'round';
+    // 正 = 5 noches; alguien lleva la cuenta en la pared
+    for (let k = 0; k < 9; k++) {
+      const x = 30 + (k % 5) * 92 + R() * 8, y = 30 + Math.floor(k / 5) * 110 + R() * 8, s = 70, n = k === 8 ? 3 : 5; g.lineWidth = 5 + R() * 2;
+      const st = [[0, 0, s, 0], [s / 2, 0, s / 2, s], [s / 2, s / 2, s * 0.9, s / 2], [s * 0.15, s * 0.35, s * 0.15, s], [-0.05 * s, s, s * 1.05, s]];
+      for (let i = 0; i < n; i++) { const q = st[i]; g.beginPath(); g.moveTo(x + q[0] + R() * 3, y + q[1] + R() * 3); g.lineTo(x + q[2] + R() * 3, y + q[3] + R() * 3); g.stroke(); }
+    }
+  }),
+  graffiti: (text = 'でられない', color = 'rgba(150,20,16,0.85)') => signCanvas(1024, 256, (g, w, h) => {
+    g.clearRect(0, 0, w, h); const R = mulberry32(text.length * 7);
+    g.save(); g.translate(w / 2, h / 2); g.rotate(-0.05); txt(g, text, 0, 0, 150, color, { align: 'center', weight: '900' }); g.restore();
+    g.fillStyle = color; for (let i = 0; i < 14; i++) { const x = 100 + R() * 820, y = 150 + R() * 40; g.fillRect(x, y, 3 + R() * 3, 20 + R() * 70); }
+  }),
+  crack: () => signCanvas(512, 512, (g, w, h) => {
+    g.clearRect(0, 0, w, h); const R = mulberry32(77); g.strokeStyle = 'rgba(12,10,8,0.9)'; g.lineCap = 'round';
+    const branch = (x, y, a, len, wd) => { if (wd < 0.6 || len < 6) return; g.lineWidth = wd; g.beginPath(); g.moveTo(x, y); const nx = x + Math.cos(a) * len, ny = y + Math.sin(a) * len; g.lineTo(nx, ny); g.stroke();
+      branch(nx, ny, a + (R() - 0.5) * 0.9, len * (0.7 + R() * 0.25), wd * 0.82); if (R() < 0.35) branch(nx, ny, a + (R() < 0.5 ? -1 : 1) * (0.6 + R() * 0.6), len * 0.6, wd * 0.6); };
+    for (let k = 0; k < 4; k++) branch(256, 256, k * PI / 2 + R(), 40, 4);
+  }),
+  grime: () => signCanvas(512, 512, (g, w, h) => {
+    g.clearRect(0, 0, w, h); const R = mulberry32(91);
+    for (let i = 0; i < 40; i++) { const x = 80 + R() * 350, y = 60 + R() * 200; const gr = g.createRadialGradient(x, y, 0, x, y, 30 + R() * 70); gr.addColorStop(0, 'rgba(18,14,8,0.22)'); gr.addColorStop(1, 'rgba(18,14,8,0)'); g.fillStyle = gr; g.fillRect(0, 0, w, h); }
+    for (let i = 0; i < 26; i++) { const x = 80 + R() * 350, y = 180 + R() * 80, l = 60 + R() * 220; const gr = g.createLinearGradient(0, y, 0, y + l); gr.addColorStop(0, 'rgba(20,14,8,0.35)'); gr.addColorStop(1, 'rgba(20,14,8,0)'); g.fillStyle = gr; g.fillRect(x, y, 2 + R() * 5, l); }
+  }),
+  tape: () => signCanvas(1024, 64, (g, w, h) => {
+    g.fillStyle = '#e8c21a'; g.fillRect(0, 0, w, h); g.fillStyle = '#141414';
+    for (let x = -64; x < w; x += 64) { g.beginPath(); g.moveTo(x, h); g.lineTo(x + 32, 0); g.lineTo(x + 56, 0); g.lineTo(x + 24, h); g.fill(); }
+    for (let x = 60; x < w; x += 340) { g.fillStyle = '#e8c21a'; g.fillRect(x - 6, 10, 230, 44); txt(g, '立入禁止 KEEP OUT', x, 33, 26, '#141414'); }
+  }),
+  hands: () => signCanvas(512, 512, (g, w, h) => {
+    g.clearRect(0, 0, w, h); const R = mulberry32(5);
+    for (let k = 0; k < 5; k++) {
+      const x = 80 + R() * 340, y = 80 + R() * 300, a = (R() - 0.5) * 0.8; g.save(); g.translate(x, y); g.rotate(a); g.fillStyle = 'rgba(25,18,14,0.55)';
+      g.beginPath(); g.ellipse(0, 20, 26, 32, 0, 0, PI * 2); g.fill();
+      for (let f = 0; f < 4; f++) { g.beginPath(); g.ellipse(-21 + f * 14, -26 - (f === 1 || f === 2 ? 8 : 0), 6, 20, 0, 0, PI * 2); g.fill(); }
+      g.beginPath(); g.ellipse(30, 6, 6, 16, -0.8, 0, PI * 2); g.fill();
+      g.fillRect(-14, 48, 4, 40 + R() * 60); g.restore();
+    }
+  }),
+});
 // ==== src/zones/props.js ====
 /* =====================================================================
    PROPS reutilizables
@@ -2792,6 +3889,27 @@ function barrierZ(B, x, z0, z1, y = 0) {
   }
 }
 
+// ---- Objetos recogibles (modelos pequeños) ----
+function batteryProp(B, x, y, z, rot = 0) {
+  for (const k of [-1, 1]) {
+    const ox = Math.cos(rot) * 0.018 * k, oz = -Math.sin(rot) * 0.018 * k, ax = Math.sin(rot) * 0.025, az = Math.cos(rot) * 0.025;
+    B.cyl('dark', [x + ox - ax, y + 0.009, z + oz - az], [x + ox + ax * 0.6, y + 0.009, z + oz + az * 0.6], 0.009, 6, { caps: true });
+    B.cyl('yellow', [x + ox + ax * 0.6, y + 0.009, z + oz + az * 0.6], [x + ox + ax, y + 0.009, z + oz + az], 0.009, 6, { caps: true });
+  }
+}
+function keyProp(B, x, y, z) {
+  B.cyl('yellow', [x - 0.03, y + 0.003, z], [x + 0.03, y + 0.003, z], 0.004, 4, { caps: true });
+  B.cyl('yellow', [x - 0.045, y + 0.003, z], [x - 0.03, y + 0.003, z], 0.012, 8, { caps: true });
+  B.box('red', x - 0.09, y, z - 0.012, x - 0.055, y + 0.004, z + 0.012);
+}
+function fuseProp(B, x, y, z) {
+  B.cyl('cream', [x - 0.03, y + 0.012, z], [x + 0.03, y + 0.012, z], 0.012, 8, { caps: true });
+  for (const s of [-1, 1]) B.cyl('metal', [x + s * 0.03, y + 0.012, z], [x + s * 0.042, y + 0.012, z], 0.013, 8, { caps: true });
+}
+function punchProp(B, x, y, z) {
+  B.box('metal', x - 0.07, y, z - 0.008, x + 0.04, y + 0.012, z + 0.008); B.box('metal', x - 0.07, y, z + 0.012, x + 0.04, y + 0.012, z + 0.028);
+  B.box('dark', x + 0.03, y, z - 0.01, x + 0.07, y + 0.016, z + 0.03);
+}
 // ==== src/zones/z1-exterior.js ====
 /* =====================================================================
    ZONA 1 — Entrada exterior de la estación (三条京阪駅, salida 2)
@@ -2843,7 +3961,9 @@ function buildZone1() {
   // marquesina luminosa
   B.box('white', FX0 - 0.05, 3.2, -3.0, FX1 + 0.05, 3.27, -2.28, { skip: ['ny'] });
   B.ceil('ceilPanel', FX0 - 0.05, FX1 + 0.05, -3.0, -2.28, CY);
-  B.glowSign(Signs.canopy(), [(FX0 + FX1) / 2, (CY + 3.2) / 2, -2.28], '+z', FX1 - FX0 + 0.1, 3.2 - CY, 2.1, { off: 0.001 });
+  // 2º acto: el nombre de la estación ha cambiado
+  B.when('act2', false, () => B.glowSign(Signs.canopy(), [(FX0 + FX1) / 2, (CY + 3.2) / 2, -2.28], '+z', FX1 - FX0 + 0.1, 3.2 - CY, 2.1, { off: 0.001 }));
+  B.when('act2', true, () => B.glowSign(Signs.canopyAct2(), [(FX0 + FX1) / 2, (CY + 3.2) / 2, -2.28], '+z', FX1 - FX0 + 0.1, 3.2 - CY, 2.1, { off: 0.001, key: 'canopy2' }));
   B.emissiveBox(0xf2f4f6, 1.7, FX0 - 0.06, CY, -3.0, FX0 - 0.05, 3.2, -2.28);
   B.emissiveBox(0xf2f4f6, 1.7, FX1 + 0.05, CY, -3.0, FX1 + 0.06, 3.2, -2.28);
   B.bake({ p: [-2.4, 2.95, -2.2], color: lin(0xeef3ff), I: 26, range: 15, tube: { axis: 'x', len: 13.6, step: 1.1 }, dir: [0, -0.35, 0.94], dmin: 0.06 });
@@ -2865,7 +3985,7 @@ function buildZone1() {
   B.box('grey', 2.4, 2.12, FZ, 3.5, 2.17, FZ + 0.05); B.box('grey', 2.4, 0, FZ, 2.45, 2.12, FZ + 0.05); B.box('grey', 3.45, 0, FZ, 3.5, 2.12, FZ + 0.05);
   B.cyl('metal', [3.28, 1.0, FZ + 0.04], [3.28, 1.0, FZ + 0.1], 0.02, 6, { caps: true }); B.cyl('metal', [3.28, 1.0, FZ + 0.1], [3.15, 1.0, FZ + 0.1], 0.016, 6, { caps: true });
   B.box('steel', 3.75, 0.9, FZ, 4.15, 1.45, FZ + 0.12); // caja eléctrica
-  B.door({ box: { x0: 2.45, x1: 3.45, y0: 0, y1: 2.12, z0: FZ - 0.05, z1: FZ + 0.1 }, to: 'z7', spawn: 'fromZ1', flag: 'steel', pos: [2.95, 1.0, FZ + 0.1] });
+  B.door({ box: { x0: 2.45, x1: 3.45, y0: 0, y1: 2.12, z0: FZ - 0.05, z1: FZ + 0.1 }, to: 'z7', spawn: 'fromZ1', flag: 'steel', pos: [2.95, 1.0, FZ + 0.1], msg: 'Puerta de servicio. Está cerrada por dentro.' });
   // ---------- Rellano superior ----------
   B.floor('floorTile', OX0, OX1, -5.8, FZ, 0);
   B.ground(OX0 - 0.02, OX1, -5.8, FZ + 0.01, 0, 'tile');
@@ -2986,7 +4106,14 @@ function buildZone1() {
   B.bake({ p: [5.4, 1.1, -1.85], color: lin(0xe6f0ff), I: 4.5, range: 8, dir: [0, 0, 1], dmin: 0.04 });
   B.glow([5.4, 1.2, -2.1], scale3(lin(0xdfeeff), 0.06), 1.8);
   B.glint({ L: [5.4, 1.3, -2.2], fy: 0, color: lin(0xe6f0ff), k: 0.35, size: 0.8, len: 0.8, b: [-24, 24, -2.2, 2.85] });
-  B.collider(VX0, VX1, FZ, VZ1); B.interact({ x0: VX0, x1: VX1, y0: 0.2, y1: 1.8, z0: VZ1 - 0.1, z1: VZ1 + 0.05 }, () => AudioSys.beep([5.4, 1.0, VZ1]));
+  B.collider(VX0, VX1, FZ, VZ1);
+  // la palanca de devolución suelta unas monedas olvidadas (primer objeto)
+  B.interact({ x0: VX0, x1: VX1, y0: 0.2, y1: 1.8, z0: VZ1 - 0.1, z1: VZ1 + 0.05 }, () => {
+    AudioSys.beep([5.4, 1.0, VZ1]);
+    if (Flags.coinsGot) { Hud.msg('La máquina no tiene nada más que darte.'); return; }
+    setFlag('coinsGot'); AudioSys.coins([5.4, 0.3, VZ1]); Hud.msg('Tiras de la palanca de devolución… caen unas monedas.'); Inv.add('coins');
+  }, 'Máquina expendedora');
+  B.sparkles.push({ p: [5.62, 0.42, VZ1 + 0.02], cond: { flag: 'coinsGot', state: false } });
   B.emitter({ type: 'vending', pos: [5.4, 0.9, -2.4], gain: 0.07 });
   for (const [x, t] of [[6.05, 'かん・びん'], [6.55, 'ペットボトル']]) {
     B.box('blue', x, 0, -2.95, x + 0.42, 0.95, -2.5); B.box('dark', x + 0.08, 0.95, -2.85, x + 0.34, 0.97, -2.6);
@@ -3018,6 +4145,18 @@ function buildZone1() {
     B.poster(Signs.roadClosed(), [x + (x < 0 ? 0.06 : -0.06), 1.35, 1.6], x < 0 ? '+x' : '-x', 0.6, 0.7);
     B.box('grey', x - 0.03, 0, 1.55, x + 0.03, 1.0, 1.65);
   }
+  // ---------- Objetos, notas y eventos ----------
+  B.note({ id: 'n1', p: [0.9, 0.004, 0.2] });
+  B.pickup({ id: 'bat1', item: 'battery', p: [6.27, 0.98, -2.72], build: (b) => batteryProp(b, 6.27, 0.97, -2.72, 0.4), msg: 'Pilas. Ahorra la linterna: sin luz, la estación se te mete en la cabeza.' });
+  B.decal('grime', Signs.grime, [-1.0, 1.0, -5.8], '+z', 2.0, 2.0);
+  for (const y of [0.75, 1.15]) B.decal('tape', Signs.tape, [-10.0, y, -3.05], '+z', 1.2, 0.08);   // callejón precintado
+  // 2º acto: tu propia nota y alguien al otro lado de la calle
+  B.when('act2', true, () => {
+    B.note({ id: 'n8', p: [-0.3, 0.004, -4.0] });
+    B.decal('hands', Signs.hands, [-1.2, 1.3, -5.8], '+z', 1.4, 1.4);
+    B.trigger({ x0: 1.8, x1: 4.2, z0: -2.8, z1: -0.6 }, () => Scares.apparition([13.6, -0.12, 7.6], { stare: 0.7, near: 5, life: 45 }), { id: 'z1fig' });
+    B.trigger({ x0: -1.6, x1: 1.0, z0: -5.4, z1: -3.6 }, () => { Hud.sub('«…ya has estado aquí…»', 3); AudioSys.whisper([-1, 1.6, -5], 0.4); }, { id: 'z1wh' });
+  });
   // ---------- Sonido ----------
   B.emitter({ type: 'city', gain: 0.1 });
   B.emitter({ type: 'hum', pos: [-0.3, 2.6, -4.4], gain: 0.05, group: 'land' });
@@ -3101,14 +4240,22 @@ function buildZone2() {
   B.cyl('metal', [0.36, Y1 + 1.0, -10.16], [0.36, Y1 + 1.0, -10.1], 0.02, 6, { caps: true }); B.cyl('metal', [0.36, Y1 + 1.0, -10.1], [0.22, Y1 + 1.0, -10.1], 0.016, 6, { caps: true });
   B.poster(Signs.staffOnly(), [0, Y1 + 1.55, -10.16], '+z', 0.56, 0.14, { off: 0.003 });
   // puerta de servicio: atajo hacia el túnel en obras (se desbloquea desde el otro lado)
-  B.door({ box: { x0: -0.5, x1: 0.5, y0: Y1, y1: Y1 + 2.05, z0: -10.25, z1: -10.1 }, to: 'z5', spawn: 'fromZ2', flag: 'svcDoor', pos: [0, Y1 + 1.0, -10.1] });
+  B.door({ box: { x0: -0.5, x1: 0.5, y0: Y1, y1: Y1 + 2.05, z0: -10.25, z1: -10.1 }, to: 'z5', spawn: 'fromZ2', flag: 'svcDoor', pos: [0, Y1 + 1.0, -10.1], msg: 'Solo personal. Cerrada desde el otro lado.' });
   B.glowSign(Signs.exitSign(), [0, Y1 + 2.35, -10.16], '+z', 0.5, 0.25, 1.4);
   B.bake({ p: [0, Y1 + 2.3, -10.0], color: lin(0x2aff8a), I: 0.22, range: 3, dir: [0, 0, 1], dmin: 0.1, bounce: 0.02 });
   B.glow([0, Y1 + 2.35, -10.05], [0.02, 0.12, 0.05], 0.8);
   // ---------- Carteles y detalles de "vida pasada" ----------
-  B.poster(Signs.rushPoster(), [-W, stairF1(-2.4) + 1.55, -2.4], '+x', 0.6, 0.84, { off: 0.02 });
-  B.poster(Signs.lastTrain(), [-W, stairF1(-4.9) + 1.55, -4.9], '+x', 0.6, 0.84, { off: 0.02 });
-  B.poster(Signs.manners(), [W, stairF1(-3.6) + 1.55, -3.6], '-x', 0.6, 0.84, { off: 0.02 });
+  B.when('act2', false, () => {
+    B.poster(Signs.rushPoster(), [-W, stairF1(-2.4) + 1.55, -2.4], '+x', 0.6, 0.84, { off: 0.02 });
+    B.poster(Signs.lastTrain(), [-W, stairF1(-4.9) + 1.55, -4.9], '+x', 0.6, 0.84, { off: 0.02 });
+    B.poster(Signs.manners(), [W, stairF1(-3.6) + 1.55, -3.6], '-x', 0.6, 0.84, { off: 0.02 });
+  });
+  // 2º acto: los tres pósters dicen lo mismo
+  B.when('act2', true, () => {
+    for (const [x, z, f] of [[-W, -2.4, '+x'], [-W, -4.9, '+x'], [W, -3.6, '-x']]) B.poster(Signs.scrawl, [x, stairF1(z) + 1.55, z], f, 0.6, 0.84, { off: 0.02, key: 'scrawl' });
+    // paraguas olvidados que antes no estaban
+    for (let k = 0; k < 4; k++) { const x = 1.6 + k * 0.5; B.cyl('dark', [x, Y1 + 0.02, -10.1], [x + 0.05, Y1 + 0.86, -10.0], 0.009, 5); B.cyl('umbrella', [x + 0.005, Y1 + 0.18, -10.1], [x + 0.045, Y1 + 0.82, -10.02], 0.016, 10, { r2: 0.075 }); }
+  });
   B.poster(Signs.notice(21, 'お願い'), [W, 1.5, 1.4], '-x', 0.32, 0.45);
   for (const [z, r] of [[-2.4, 0], [-4.9, 0], [-3.6, 1]]) { const y = stairF1(z) + 1.55, x0 = r ? W - 0.015 : -W, x1 = r ? W : -W + 0.015; B.box('metal', x0, y - 0.45, z - 0.33, x1, y + 0.45, z + 0.33, { skip: [r ? 'px' : 'nx'] }); }
   B.glowSign(Signs.gates(), [2.4, Y1 + 2.1, -10.17], '+z', 1.6, 0.4, 1.1);
@@ -3127,7 +4274,7 @@ function buildZone2() {
   B.box('shutter', 12.9, Y2, -9.95, 13.0, Y2 + 2.3, -8.65, { seg: 0.6 });
   B.box('grey', 12.7, Y2 + 2.3, -10.2, 13.0, Y2 + 2.55, -7.2);
   B.collider(12.85, 13.05, -10.2, -8.6);
-  B.interact({ x0: 12.8, x1: 13.0, y0: Y2, y1: Y2 + 2.3, z0: -9.95, z1: -8.65 }, () => AudioSys.shutterRattle([12.9, Y2 + 1.1, -9.3]));
+  B.interact({ x0: 12.8, x1: 13.0, y0: Y2, y1: Y2 + 2.3, z0: -9.95, z1: -8.65 }, () => { AudioSys.shutterRattle([12.9, Y2 + 1.1, -9.3]); Hud.msg('La persiana no se mueve.'); }, 'Persiana');
   B.reverbArea({ x0: 13.0, x1: 17.5, z0: -8.7, z1: -7.1, y0: Y2 - 1, y1: Y2 + 3 }, 'corridor');
   // cartel de precaución + charco
   B.poster(Signs.caution(), [10.9, Y2 + 0.42, -7.7], '-x', 0.36, 0.48, { off: 0.0 });
@@ -3159,6 +4306,19 @@ function buildZone2() {
   B.glint({ L: [11.2, Y2 + CH, -8.7], fy: Y2, color: lin(0xbcd2ff), k: 0.3, size: 0.7, b: [9.4, 13, -10.2, -7.2] });
   B.occluder(-W - 0.3, -W, -8, 6, -10.5, 8.2); B.occluder(W, W + 0.3, -4.2, 6, -7.2, 8.2);
   B.occluder(W, 13.2, Y2 - 0.2, Y1 + CH + 0.3, -7.2, -6.9);
+  // ---------- Objetos, notas y sustos ----------
+  B.note({ id: 'n2', p: [10.6, Y2 + 1.45, -10.2], facing: '+z', w: 0.24, h: 0.31 });
+  B.pickup({ id: 'key', item: 'key', p: [10.6, Y2 + 0.01, -9.85], build: (b) => keyProp(b, 10.6, Y2 + 0.004, -9.85), label: 'Recoger llave', msg: 'Una llave con etiqueta: «ホーム西» — andén, lado oeste.' });
+  B.pickup({ id: 'bat2', item: 'battery', p: [-0.95, Y1 + 0.01, -8.4], build: (b) => batteryProp(b, -0.95, Y1, -8.4, 1.2) });
+  B.decal('tally', Signs.tally, [3.0, Y1 + 1.35, -10.2], '+z', 1.0, 0.5, { off: 0.02 });
+  B.decal('grime', Signs.grime, [11.5, Y2 + 1.4, -10.2], '+z', 2.2, 2.2);
+  B.decal('crack', Signs.crack, [-W, ceilF1(-6) - 0.9, -6], '+x', 1.2, 1.2);
+  B.decal('grafA', () => Signs.graffiti('でられない'), [6.7, Y1 + 0.2, -10.2], '+z', 2.4, 0.6);
+  // pasos que bajan detrás de ti por el primer tramo
+  B.trigger({ x0: -W, x1: W, z0: -4.4, z1: -3.2 }, () => Scares.steps(6, 'stair', 0.5), { id: 'z2steps' });
+  // el tubo averiado del segundo tramo revienta al pasar
+  B.trigger({ x0: 6.2, x1: 7.6, z0: -10.2, z1: -7.2 }, (z) => Scares.lampBurst(z, 'f2', [5.6, ceilF2(5.6) - 0.3, -7.3]), { id: 'z2pop' });
+  B.when('act2', true, () => B.trigger({ x0: -W, x1: 3.0, z0: -9.0, z1: -7.6 }, () => Scares.slam([0, Y1 + 1.0, -10.1]), { id: 'z2slam' }));
   // ---------- Sonido ----------
   B.emitter({ type: 'hum', pos: [0, CH - 0.1, 1.3], gain: 0.06, group: 'u' });
   B.emitter({ type: 'hum', pos: [-W + 0.1, ceilF1(-3) - 0.3, -3], gain: 0.045 });
@@ -3259,7 +4419,14 @@ function buildZone3() {
     B.glowSign(Signs.ticketMachine, [x + 0.39, 1.02, Z0 + 0.62], '+z', 0.66, 1.08, 1.05, { key: 'tm', off: 0.003 });
   }
   B.collider(-6, -6 + 6 * 0.84, Z0, Z0 + 0.66);
-  B.interact({ x0: -6, x1: -6 + 6 * 0.84, y0: 0.4, y1: 1.7, z0: Z0 + 0.5, z1: Z0 + 0.7 }, () => AudioSys.beep([-3.5, 1.1, Z0 + 0.7]));
+  // comprar un billete con las monedas
+  B.interact({ x0: -6, x1: -6 + 6 * 0.84, y0: 0.4, y1: 1.7, z0: Z0 + 0.5, z1: Z0 + 0.7 }, () => {
+    const pos = [-3.5, 1.1, Z0 + 0.7]; AudioSys.beep(pos);
+    if (Inv.has('ticket') || Inv.has('punched')) { Hud.msg('Ya tienes un billete.'); return; }
+    if (!Inv.has('coins')) { Hud.msg('きっぷ — Necesitas monedas. La máquina no acepta billetes a esta hora.'); return; }
+    Inv.take('coins'); AudioSys.ticketPrint(pos); Hud.msg('Las monedas caen dentro. La máquina imprime un billete…', 3);
+    Scares.after(1.6, () => Inv.add('ticket'));
+  }, 'Máquina de billetes');
   B.glowSign(Signs.kippu(), [-3.5, 2.66, Z0], '+z', 5.0, 0.3, 1.3);
   B.glowSign(Signs.fareMap(), [-3.5, 2.15, Z0], '+z', 4.0, 0.62, 1.0);
   B.bake({ p: [-3.5, 1.3, Z0 + 1.2], color: lin(0xdfe8ff), I: 7, range: 7, tube: { axis: 'x', len: 5 }, dir: [0, 0, 1], dmin: 0.1 });
@@ -3272,7 +4439,7 @@ function buildZone3() {
   B.collider(-13.6, -11.5, Z1 - 0.8, Z1);
   B.bake({ p: [-12.5, 1.1, Z1 - 1.4], color: lin(0xe6f0ff), I: 6, range: 7, dir: [0, 0, -1], dmin: 0.05 });
   B.glint({ L: [-12.5, 1.4, Z1 - 0.8], fy: 0, color: lin(0xe6f0ff), k: 0.4, size: 0.9, len: 0.8, b: [X0, X1, Z0, Z1] });
-  B.interact({ x0: -13.6, x1: -11.5, y0: 0.2, y1: 1.8, z0: Z1 - 0.9, z1: Z1 - 0.7 }, () => AudioSys.beep([-12.5, 1.0, Z1 - 0.8]));
+  B.interact({ x0: -13.6, x1: -11.5, y0: 0.2, y1: 1.8, z0: Z1 - 0.9, z1: Z1 - 0.7 }, () => { AudioSys.beep([-12.5, 1.0, Z1 - 0.8]); Hud.msg('売切 — agotado.'); }, 'Máquina expendedora');
   for (const [x, t] of [[-10.9, 'かん・びん'], [-10.45, 'ペットボトル']]) { B.box('blue', x, 0, Z1 - 0.45, x + 0.4, 0.95, Z1); B.poster(Signs.binLabel(t), [x + 0.2, 0.72, Z1 - 0.45], '-z', 0.36, 0.18); }
   B.collider(-10.9, -10.05, Z1 - 0.45, Z1);
   // ---------- Torniquetes (改札) ----------
@@ -3287,11 +4454,21 @@ function buildZone3() {
     B.collider(GX0, GX1, zc - 0.12, zc + 0.12);
   }
   for (const [a, b] of [[Z0, -5.35], [5.35, Z1]]) { B.box('metal', GX0 + 0.66, 0, a, GX0 + 0.72, 1.05, b); B.collider(GX0 + 0.55, GX0 + 0.85, a, b); }
+  // sin billete las aletas de los torniquetes están cerradas
+  B.when('gate', false, () => {
+    for (let i = 0; i < 11; i++) { const za = -5.225 + i * 0.95 + 0.12, zb = za + 0.71; B.box('red', GX0 + 0.58, 0.5, za, GX0 + 0.64, 0.92, za + 0.3); B.box('red', GX0 + 0.58, 0.5, zb - 0.3, GX0 + 0.64, 0.92, zb); }
+    B.collider(GX0, GX1, -5.35, 5.35);
+    B.interact({ x0: GX0 - 0.25, x1: GX0 + 0.1, y0: 0, y1: 1.2, z0: -5.35, z1: 5.35 }, () => {
+      const pos = [GX0, 0.9, Player.pos.z];
+      if (Inv.has('ticket') || Inv.has('punched')) { AudioSys.gateOpen(pos); setFlag('gate'); Hud.msg('El torniquete se traga el billete y lo devuelve. Las aletas se abren.'); }
+      else { AudioSys.keyBeep(false); Hud.msg('改札 — Necesitas un billete.'); }
+    }, 'Torniquete');
+  });
   B.bake({ p: [GX0 - 0.3, 0.9, 0], color: lin(0x6ab0ff), I: 1.2, range: 3, tube: { axis: 'z', len: 10.5 }, dir: [-1, 0, 0], dmin: 0.2, bounce: 0.02 });
   // panel LED "servicio terminado" sobre los torniquetes
   B.box('dark', 5.94, 2.2, -1.8, 6.08, 2.7, 1.8);
-  B.glowSign(Signs.ledBoard, [5.94, 2.45, 0], '-x', 3.4, 0.45, 1.7, { key: 'led', off: 0.003 });
-  B.glowSign(Signs.ledBoard, [6.08, 2.45, 0], '+x', 3.4, 0.45, 1.7, { key: 'led', off: 0.003 });
+  B.when('act2', false, () => { B.glowSign(Signs.ledBoard, [5.94, 2.45, 0], '-x', 3.4, 0.45, 1.7, { key: 'led', off: 0.003 }); B.glowSign(Signs.ledBoard, [6.08, 2.45, 0], '+x', 3.4, 0.45, 1.7, { key: 'led', off: 0.003 }); });
+  B.when('act2', true, () => { B.glowSign(Signs.ledBoardAct2, [5.94, 2.45, 0], '-x', 3.4, 0.45, 1.9, { key: 'led2', off: 0.003 }); B.glowSign(Signs.ledBoardAct2, [6.08, 2.45, 0], '+x', 3.4, 0.45, 1.9, { key: 'led2', off: 0.003 }); });
   for (const z of [-1.5, 1.5]) B.cyl('metal', [6.01, 2.7, z], [6.01, CH, z], 0.012, 5);
   B.bake({ p: [5.6, 2.4, 0], color: lin(0xff8a2a), I: 1.4, range: 4, tube: { axis: 'z', len: 3 }, dir: [-1, -0.2, 0], dmin: 0.2, bounce: 0.03 });
   // lado de pago: máquinas de ajuste, oficina
@@ -3349,6 +4526,16 @@ function buildZone3() {
   B.tactile('bars', -3.35, 5.55, -0.15, 0.15, 0, 'x'); B.tactile('dots', 5.55, 5.85, -0.45, 0.45, 0);
   B.tactile('bars', 8.1, SW0 - 0.6, -0.15, 0.15, 0, 'x'); B.tactile('dots', SW0 - 0.6, SW0 - 0.3, -SZ, SZ, 0);
   B.tactile('dots', -5.35, -5.05, -0.15, 0.15, 0); B.tactile('bars', -5.35, -5.05, 0.15, Z1 + 1.5, 0, 'z');
+  // ---------- Objetos, notas y sustos ----------
+  B.note({ id: 'n3', p: [-1.0, 0.004, -6.95] });
+  B.pickup({ id: 'bat3', item: 'battery', p: [-4.0, 0.01, 4.25], build: (b) => batteryProp(b, -4.0, 0, 4.25, 2.1) });
+  B.decal('grime', Signs.grime, [13.2, 1.6, Z0], '+z', 3.0, 2.4);
+  B.decal('tape', Signs.tape, [13.2, 1.2, Z0 + 0.05], '+z', 4.4, 0.12, { off: 0.03 });
+  B.decal('tally', Signs.tally, [-24.9, 1.3, 0], '+x', 1.2, 0.6, { off: 0.01 });
+  B.decal('crack', Signs.crack, [0, 0.004, 5.5], '+y', 2.0, 2.0);
+  // al cruzar los torniquetes: apagón, y al volver la luz hay alguien en la escalera
+  B.trigger({ x0: 8.2, x1: 10.2, z0: -4, z1: 4 }, (z) => Scares.blackout(4.2, () => { const g = z.groundTop(12.8, 0); Scares.apparition([12.8, g ? g.y : -1.2, 0.2], { stare: 0.35, near: 3, life: 20 }); }), { id: 'z3black', cond: { flag: 'gate', state: true } });
+  B.when('act2', true, () => B.trigger({ x0: -14, x1: -10, z0: -1.5, z1: 1.5 }, () => { Hud.sub('«まもなく…終点です»', 3); AudioSys.whisper(null, 0.3); }, { id: 'z3wh' }));
   // ---------- Sonido ----------
   B.emitter({ type: 'hum', pos: [-11.2, CH - 0.1, 2.4], gain: 0.045, group: 'ent' });
   B.emitter({ type: 'hum', pos: [-3.6, CH - 0.1, -6], gain: 0.045, group: 'mach' });
@@ -3396,11 +4583,21 @@ function buildZone4() {
   const UNIT = 4.0; let u = 0;
   for (let x = X0 + 0.5; x + UNIT <= X1 - 0.2; x += UNIT, u++) {
     B.box('psdBeige', x, 0, ZP, x + 1.0, 2.0, ZP + 0.18, { skip: ['ny'] });
-    for (const [a, b] of [[x + 1.0, x + 2.1], [x + 2.1, x + 3.2]]) {
-      B.box('psdWhite', a + 0.015, 0, ZP + 0.03, b - 0.015, 1.95, ZP + 0.15, { skip: ['ny'] });
-      B.box('glassDark', a + 0.2, 0.95, ZP + 0.024, b - 0.2, 1.75, ZP + 0.03, { skip: ['ny', 'py', 'px', 'nx', 'pz'] });
-      B.box('dark', a + 0.48, 0.15, ZP + 0.024, a + 0.62, 0.9, ZP + 0.03, { skip: ['ny', 'py', 'px', 'nx', 'pz'] });
-    }
+    const leaves = (sh) => { for (const [a, b, s] of [[x + 1.0, x + 2.1, -1], [x + 2.1, x + 3.2, 1]]) {
+      const o = s * sh;
+      B.box('psdWhite', a + 0.015 + o, 0, ZP + 0.03, b - 0.015 + o, 1.95, ZP + 0.15, { skip: ['ny'] });
+      B.box('glassDark', a + 0.2 + o, 0.95, ZP + 0.024, b - 0.2 + o, 1.75, ZP + 0.03, { skip: ['ny', 'py', 'px', 'nx', 'pz'] });
+      B.box('dark', a + 0.48 + o, 0.15, ZP + 0.024, a + 0.62 + o, 0.9, ZP + 0.03, { skip: ['ny', 'py', 'px', 'nx', 'pz'] });
+    } };
+    // unidad 7: la puerta por la que se sube al último tren (final)
+    if (u === 7) {
+      B.when('trainHere', false, () => leaves(0));
+      B.when('trainHere', true, () => {
+        leaves(0.95);
+        B.glowSign(trainInteriorCanvas(), [x + 2.1, 1.0, ZP + 0.33], '-z', 2.1, 2.0, 1.15, { off: 0 });
+        B.interact({ x0: x + 1.0, x1: x + 3.2, y0: 0, y1: 2.0, z0: ZP - 0.3, z1: ZP + 0.3 }, () => Ending.board(), 'Subir al tren');
+      });
+    } else leaves(0);
     B.box('psdWhite', x + 3.2, 0, ZP, x + UNIT, 2.0, ZP + 0.18, { skip: ['ny'] });
     const cell = u % 16, cu = (cell % 4) / 4, cv = 1 - (Math.floor(cell / 4) + 1) / 4;
     B.glowSign(Signs.doorNums, [x + 2.1, 2.14, ZP], '-z', 0.2, 0.2, 1.1, { key: 'dn', uv: [cu, cv, cu + 0.25, cv + 0.25], off: 0.005 });
@@ -3438,8 +4635,8 @@ function buildZone4() {
   }
   for (const x of [-9, 7]) {
     B.box('dark', x - 1.2, 2.32, -1.06, x + 1.2, 2.78, -0.94);
-    B.glowSign(Signs.platformName, [x, 2.55, -1.06], '-z', 2.36, 0.44, 1.2, { key: 'pn', off: 0.003 });
-    B.glowSign(Signs.platformName, [x, 2.55, -0.94], '+z', 2.36, 0.44, 1.2, { key: 'pn', off: 0.003 });
+    B.when('act2', false, () => { B.glowSign(Signs.platformName, [x, 2.55, -1.06], '-z', 2.36, 0.44, 1.2, { key: 'pn', off: 0.003 }); B.glowSign(Signs.platformName, [x, 2.55, -0.94], '+z', 2.36, 0.44, 1.2, { key: 'pn', off: 0.003 }); });
+    B.when('act2', true, () => { B.glowSign(Signs.platformNameAct2, [x, 2.55, -1.06], '-z', 2.36, 0.44, 1.2, { key: 'pn2', off: 0.003 }); B.glowSign(Signs.platformNameAct2, [x, 2.55, -0.94], '+z', 2.36, 0.44, 1.2, { key: 'pn2', off: 0.003 }); });
     for (const dx of [-1, 1]) B.cyl('metal', [x + dx, 2.78, -1], [x + dx, CH, -1], 0.01, 4);
   }
   for (const x of [-21, -3, 11]) { B.box('grey', x - 0.25, 0, ZW, x + 0.25, 0.9, ZW + 0.35); B.box('dark', x - 0.2, 0.9, ZW + 0.05, x + 0.2, 0.93, ZW + 0.3); B.collider(x - 0.25, x + 0.25, ZW, ZW + 0.35); }
@@ -3470,7 +4667,21 @@ function buildZone4() {
   B.poster(Signs.maintenance(), [X0 + 0.05, 1.4, -0.4], '+x', 0.9, 0.45, { off: 0.003 });
   B.cyl('metal', [X0 + 0.05, 1.0, 0.05], [X0 + 0.12, 1.0, 0.05], 0.018, 6, { caps: true });
   B.emissiveBox(0xff2a1a, 2.5, X0, 2.2, -0.5, X0 + 0.08, 2.32, -0.3); B.glow([X0 + 0.15, 2.26, -0.4], [0.3, 0.02, 0.01], 0.6);
-  B.door({ box: { x0: X0 - 0.1, x1: X0 + 0.3, y0: 0, y1: 2.0, z0: -1.0, z1: 0.2 }, to: 'z5', spawn: 'fromZ4', pos: [X0 + 0.1, 1, -0.4], kind: 'gate' });
+  B.door({ box: { x0: X0 - 0.1, x1: X0 + 0.3, y0: 0, y1: 2.0, z0: -1.0, z1: 0.2 }, to: 'z5', spawn: 'fromZ4', pos: [X0 + 0.1, 1, -0.4], kind: 'gate',
+    flag: 'maint', item: 'key', msg: 'Cerrada con llave. 関係者以外立入禁止 — solo personal.' });
+  // ---------- Objetos, notas y sustos ----------
+  B.note({ id: 'n4', p: [-12.25, 0.475, ZW + 0.33] });
+  B.pickup({ id: 'bat4', item: 'battery', p: [9.7, 0.01, ZW + 0.95], build: (b) => batteryProp(b, 9.7, 0, ZW + 0.95, 0.7) });
+  B.decal('grime', Signs.grime, [-15, 1.6, ZW], '+z', 2.6, 2.6); B.decal('grime', Signs.grime, [14, 1.3, ZW], '+z', 2.0, 2.0);
+  B.decal('crack', Signs.crack, [-26, 1.8, ZW], '+z', 1.6, 1.6);
+  B.decal('tally', Signs.tally, [-10.6, 1.25, ZW], '+z', 1.0, 0.5);
+  B.decal('hands', Signs.hands, [-22, 1.0, ZP - 0.02], '-z', 1.5, 1.5);
+  // al bajar al andén: alguien espera junto a la puerta de mantenimiento
+  B.trigger({ x0: 12.5, x1: 16.4, z0: ZW, z1: 0.3, y0: -1, y1: 1 }, () => Scares.apparition([X0 + 1.4, 0, -0.4], { stare: 0.5, near: 7, life: 35 }), { id: 'z4fig' });
+  // golpes en las puertas de andén desde el lado de la vía
+  B.trigger({ x0: -9, x1: -5, z0: ZW, z1: ZP }, () => Scares.bang([-7, 1.3, ZP + 0.3]), { id: 'z4bang' });
+  // 2º acto: con el billete perforado llega el último tren
+  B.when('act2', true, () => B.trigger({ x0: X0, x1: 13.5, z0: ZW, z1: ZP, y0: -1, y1: 1 }, () => Ending.arrive()));
   // ---------- Sonido: casi silencio ----------
   for (const r of reals) B.emitter({ type: 'hum', pos: [r.x, CH - 0.25, 1.75], gain: 0.028, group: r.g });
   B.emitter({ type: 'vent', pos: [0, CH, -2], gain: 0.03, ref: 4 });
@@ -3542,7 +4753,20 @@ function buildZone5() {
   B.box('steel', AX0, TY, 1.7, AX0 + 0.05, TY + 2.0, 2.7, { seg: 0.6 });
   B.box('rust', AX0, TY + 2.0, 1.64, AX0 + 0.08, TY + 2.08, 2.76); B.box('rust', AX0, TY, 1.64, AX0 + 0.08, TY + 2.0, 1.7); B.box('rust', AX0, TY, 2.7, AX0 + 0.08, TY + 2.0, 2.76);
   B.poster(Signs.construction(), [AX0, TY + 1.5, 3.9], '+x', 1.0, 0.5, { off: 0.01 });
-  B.door({ box: { x0: AX0 - 0.1, x1: AX0 + 0.3, y0: TY, y1: TY + 2.0, z0: 1.7, z1: 2.7 }, to: 'z6', spawn: 'fromZ5', pos: [AX0 + 0.2, TY + 1, 2.2] });
+  B.door({ box: { x0: AX0 - 0.1, x1: AX0 + 0.3, y0: TY, y1: TY + 2.0, z0: 1.7, z1: 2.7 }, to: 'z6', spawn: 'fromZ5', pos: [AX0 + 0.2, TY + 1, 2.2],
+    flag: 'power', msg: 'Es una puerta eléctrica. No hay corriente.' });
+  // cuadro eléctrico: falta el fusible
+  B.box('grey', AX0, TY + 1.0, -0.45, AX0 + 0.1, TY + 1.9, 0.15);
+  B.poster(Signs.fuseBox, [AX0 + 0.1, TY + 1.45, -0.15], '+x', 0.5, 0.75, { off: 0.004 });
+  B.when('power', false, () => B.emissiveBox(0xff2a1a, 3, AX0 + 0.1, TY + 1.95, -0.2, AX0 + 0.14, TY + 2.0, -0.1));
+  B.when('power', true, () => B.emissiveBox(0x2aff6a, 3, AX0 + 0.1, TY + 1.95, -0.2, AX0 + 0.14, TY + 2.0, -0.1));
+  B.interact({ x0: AX0, x1: AX0 + 0.35, y0: TY + 0.9, y1: TY + 2.0, z0: -0.5, z1: 0.2 }, () => {
+    if (Flags.power) { Hud.msg('El cuadro zumba. Hay corriente.'); return; }
+    if (!Inv.has('fuse')) { AudioSys.click(AudioSys.tmp(1, 0.2), 0.2, 1800); Hud.msg('Hay un hueco vacío: FUSE 30A.'); return; }
+    Inv.take('fuse'); setFlag('power'); AudioSys.unlock([AX0 + 0.2, TY + 1.4, -0.15]); AudioSys.powerUp();
+    Hud.msg('Colocas el fusible. Algo arranca con un zumbido dentro del muro.');
+    Scares.after(2.5, () => Scares.blackout(1.6, () => Scares.apparition([-49.6, TY, 2.6], { stare: 0.4, near: 4, life: 25 })));
+  }, 'Cuadro eléctrico');
   // cables colgando a lo largo de la bóveda
   const hookZ = AZ - Math.sqrt(AR * AR - 1) + 0.08;
   for (const dy of [0.95, 1.2]) for (let x = AX0 + 2; x < NX0 - 1; x += 4) {
@@ -3562,7 +4786,7 @@ function buildZone5() {
   B.box('steel', 11.95, SY, -2.75, 12, SY + 2.0, -1.85, { seg: 0.6 });
   B.box('rust', 11.92, SY + 2.0, -2.81, 12, SY + 2.08, -1.79);
   B.poster(Signs.maintenance(), [11.95, SY + 2.35, -2.3], '-x', 0.8, 0.4);
-  B.door({ box: { x0: 11.8, x1: 12.1, y0: SY, y1: SY + 2.0, z0: -2.75, z1: -1.85 }, to: 'z4', spawn: 'fromZ5', pos: [11.95, SY + 1, -2.3], kind: 'gate' });
+  B.door({ box: { x0: 11.8, x1: 12.1, y0: SY, y1: SY + 2.0, z0: -2.75, z1: -1.85 }, to: 'z4', spawn: 'fromZ5', pos: [11.95, SY + 1, -2.3], kind: 'gate', flag: 'maint', msg: 'Cerrada con llave desde el otro lado.' });
   B.reverbArea({ x0: 4.5, x1: 12.2, z0: LZ0, z1: -1.6, y0: 1.2, y1: 8 }, 'stairwell');
   // ---------- Puerta de servicio (atajo hacia la escalera de la zona 2) ----------
   B.box('steel', 15.5, 0, LZ0, 16.4, 2.0, LZ0 + 0.05, { seg: 0.6 });
@@ -3612,6 +4836,17 @@ function buildZone5() {
   { const g = B.grp('red', 'none'); g.real = 2; g.glows.push(rg); }
   B.glint({ L: [AX0 + 0.3, TY + 2.5, 2.2], fy: TY + 0.03, color: lin(0xff2a14), k: 0.5, size: 0.6, len: 1.4, b: [AX0, AX0 + 14, 1, 4] });
   B.occluder(4.5, 12, CH, 7.1, -1.7, -1.6);
+  // ---------- Objetos, notas y sustos ----------
+  B.note({ id: 'n5', p: [-2.4, 1.45, LZ0], facing: '+z', w: 0.24, h: 0.31 });
+  B.box('cardboard', 1.0, 0, -2.65, 1.6, 0.4, -2.1);                                 // caja dentro del andamio
+  B.pickup({ id: 'fuse', item: 'fuse', p: [1.3, 0.42, -2.3], box: { x0: 1.0, x1: 1.6, y0: 0.3, y1: 0.7, z0: -2.65, z1: -2.0 }, build: (b) => fuseProp(b, 1.3, 0.4, -2.3), label: 'Recoger fusible', msg: 'Un fusible de 30 A. El cuadro de la obra está al fondo del túnel.' });
+  B.pickup({ id: 'bat5', item: 'battery', p: [-36, TY + 0.17, 2.0], build: (b) => batteryProp(b, -36, TY + 0.16, 2.0, 1.6) });
+  B.decal('tape', Signs.tape, [1.3, 1.25, -1.84], '+z', 1.7, 0.1);
+  B.decal('grafB', () => Signs.graffiti('0:42', 'rgba(170,24,18,0.8)'), [-30, -0.45, AZ + AR - 0.02], '-z', 2.6, 0.65);
+  B.decal('crack', Signs.crack, [8, 1.6, LZ0], '+z', 1.8, 1.8);
+  B.decal('grime', Signs.grime, [-8, 1.7, LZ0], '+z', 3.0, 3.0);
+  B.trigger({ x0: -24, x1: -21, z0: -1, z1: 5.5 }, (z) => Scares.lampBurst(z, 'w1', [-27, AYB + AR - 0.8, AZ + 0.4]), { id: 'z5pop' });
+  B.trigger({ x0: -46, x1: -43, z0: -1, z1: 5.5 }, () => Scares.steps(7, 'gravel', 0.62), { id: 'z5steps' });
   // ---------- Sonido ----------
   B.emitter({ type: 'hum', pos: [2, 2.65, LZ0 + 0.2], gain: 0.05, group: 'n0', sizzle: 2.4 });
   B.emitter({ type: 'hum', pos: [18, 2.65, LZ0 + 0.2], gain: 0.05, group: 'n1', sizzle: 3.2 });
@@ -3729,6 +4964,8 @@ function buildZone6() {
   // ---------- Detalles: teléfono público, banco, cajas, poste de barbero, máquina rota ----------
   B.box('phoneGreen', -10.9, 0.8, 6.6, -10.5, 1.4, 7.1); B.box('grey', -10.95, 0, 6.7, -10.6, 0.8, 7.0);
   B.poster(Signs.phone(), [-10.48, 1.55, 6.85], '+x', 0.4, 0.15); B.collider(-11.0, -10.45, 6.55, 7.15);
+  B.box('dark', -10.5, 1.0, 6.65, -10.44, 1.35, 6.75);                                       // auricular colgado
+  B.interact({ x0: -10.95, x1: -10.4, y0: 0.8, y1: 1.5, z0: 6.55, z1: 7.15 }, () => Scares.phoneAnswer(), 'Teléfono');
   B.box('woodBrown', 2.6, 0.42, -4.7, 4.0, 0.47, -4.3); for (const x of [2.7, 3.9]) B.box('dark', x - 0.03, 0, -4.65, x + 0.03, 0.42, -4.35); B.collider(2.55, 4.05, -4.75, -4.25);
   for (const [x, z, s] of [[-19.5, 0.7, 0.5], [-19.0, 0.8, 0.4], [-19.3, 0.75, 0.35]]) B.box('cardboard', x - s / 2, s === 0.35 ? 0.5 : 0, z - s / 2, x + s / 2, (s === 0.35 ? 0.5 : 0) + s, z + s / 2);
   B.collider(-19.8, -18.75, 0.4, 1.2);
@@ -3767,12 +5004,35 @@ function buildZone6() {
   B.glowSign(Tex.windowBand().image, [7.8, 2.72 + 1.15, -21.6], '+z', 2.4, 2.3, 0.45, { key: 'door', off: 0.002 });
   for (const x of [6.67, 8.93]) B.rail([[x, 0.85, -15.5], [x, 0.85, -16], [x, 2.72 + 0.85, -20.8], [x, 2.72 + 0.85, -21.2]], [x < 7 ? -1 : 1, 0], { key: 'rust' });
   B.bake({ p: [7.8, 2.72 + 1.2, -21.2], color: lin(0x7a9ae0), I: 2.5, range: 7, dir: [0, -0.2, 1], dmin: 0.2 });
-  B.portal({ x0: 6.6, x1: 9.0, z0: -21.8, z1: -19.8, y0: 1.5, y1: 6 }, 'z7', 'fromZ6');
+  B.when('code', true, () => B.portal({ x0: 6.6, x1: 9.0, z0: -21.8, z1: -19.8, y0: 1.5, y1: 6 }, 'z7', 'fromZ6'));
+  // puerta de cristal con teclado numérico (clave: la hora en que se paró todo)
+  B.when('code', false, () => {
+    B.box('glass', 6.62, 2.0, -19.62, 8.98, 4.45, -19.58, { seg: 2 }); B.collider(6.6, 9.0, -19.66, -19.5, 1.0, 6);
+    for (const x of [7.78, 7.82]) B.box('metal', x - 0.02, 2.0, -19.64, x + 0.02, 4.45, -19.56);
+    B.box('metal', 6.6, 4.45, -19.66, 9.0, 4.55, -19.54);
+  });
+  B.box('dark', 8.94, 3.05, -19.36, 9.0, 3.55, -19.04);
+  B.glowSign(Signs.keypadPanel(), [8.935, 3.3, -19.2], '-x', 0.16, 0.26, 0.8, { off: 0.002 });
+  B.interact({ x0: 8.7, x1: 9.0, y0: 2.9, y1: 3.7, z0: -19.45, z1: -18.95 }, () => {
+    if (Flags.code) { AudioSys.keyBeep(true); Hud.msg('La puerta ya está abierta.'); return; }
+    Keypad.open('0042', () => { setFlag('code'); AudioSys.doorOpen([7.8, 3.2, -19.6], 'gate'); Hud.msg('Clic. La puerta de cristal se desbloquea.'); Save.write(); });
+  }, 'Teclado');
   B.reverbArea({ x0: 6.6, x1: 9.0, z0: -22, z1: -16, y0: -1, y1: 7 }, 'stairwell');
   // puerta al túnel (vuelta a la zona 5)
   B.box('steel', -22, 0, -0.5, -21.95, 2.0, 0.5, { seg: 0.6 }); B.box('rust', -22, 2.0, -0.56, -21.92, 2.08, 0.56);
   B.cyl('metal', [-21.95, 1.0, 0.35], [-21.88, 1.0, 0.35], 0.018, 6, { caps: true });
   B.door({ box: { x0: -22.1, x1: -21.8, y0: 0, y1: 2.0, z0: -0.5, z1: 0.5 }, to: 'z5', spawn: 'fromZ6', pos: [-21.9, 1, 0] });
+  // ---------- Objetos, notas y sustos ----------
+  B.note({ id: 'n6', p: [3.3, 0.475, -4.5] });
+  B.pickup({ id: 'bat6', item: 'battery', p: [8.3, 0.01, -7.4], build: (b) => batteryProp(b, 8.3, 0, -7.4, 2.6) });
+  B.decal('hands', Signs.hands, [-13.0, 1.1, -1.12], '+z', 1.6, 1.6, { off: 0.07 });
+  B.decal('grafA', () => Signs.graffiti('でられない'), [-5.5, 1.2, 1.2], '-z', 2.4, 0.6, { off: 0.07 });
+  B.decal('tally', Signs.tally, [-3.2, 1.3, -6.5], '+x', 1.0, 0.5, { off: 0.07 });
+  B.decal('grime', Signs.grime, [9.0, 1.4, -4.0], '-x', 2.6, 2.6); B.decal('grime', Signs.grime, [-22, 1.4, 0.8], '+x', 2.0, 2.0);
+  B.decal('crack', Signs.crack, [-2, CH - 0.004, -10], '-y', 1.6, 1.6);
+  B.trigger({ x0: -11.2, x1: -8.8, z0: 0, z1: 2.2 }, () => Scares.phoneStart([-10.7, 1.2, 6.85]), { id: 'z6phone' });
+  B.trigger({ x0: -14, x1: -12, z0: -1.2, z1: 1.2 }, () => { Scares.slam([-17.5, 1.2, -1.3], 0.8); AudioSys.shutterRattle([-17.5, 1.2, -1.3]); }, { id: 'z6slam' });
+  B.trigger({ x0: 6.6, x1: 9.0, z0: -6.2, z1: -5.0 }, () => Scares.apparition([7.8, 0, -15.4], { stare: 0.5, near: 4, life: 30 }), { id: 'z6fig' });
   // ---------- Sonido ----------
   B.emitter({ type: 'hum', pos: [LX, LY, LZ], gain: 0.05, group: 'lamp', sizzle: 2.0, harm: [0.7, 0.5, 0.3, 0.2] });
   B.emitter({ type: 'sign', pos: [8.9, 2.45, -10.9], gain: 0.04, group: 'luna' });
@@ -3855,15 +5115,21 @@ function buildZone7() {
     b.box(-0.22, 0.43, -0.22, 0.22, 0.49, 0.22); b.box(0.17, 0.49, -0.22, 0.23, 0.92, 0.22);
     for (const [x, z] of [[-0.19, -0.19], [0.19, -0.19], [-0.19, 0.19], [0.19, 0.19]]) b.box(x - 0.015, 0, z - 0.015, x + 0.015, 0.43, z + 0.015);
   };
-  const chairs = [], R2 = mulberry32(707);
+  const chairs = [], turned = [], R2 = mulberry32(707);
   for (let r = 0; r < 4; r++) for (let c = 0; c < 9; c++) {
     const x = -4.2 - r * 0.95, z = -3.2 + c * 0.8; if (r === 3 && c === 6) continue;   // falta una silla
     chairs.push(new THREE.Matrix4().makeRotationY((R2() - 0.5) * 0.12).setPosition(x + (R2() - 0.5) * 0.06, 0, z));
+    turned.push(new THREE.Matrix4().makeRotationY(PI + (R2() - 0.5) * 0.08).setPosition(x, 0, z));      // 2º acto: miran hacia ti
   }
-  B.instanced('seatGrey', chair, chairs);
+  B.when('act2', false, () => B.instanced('seatGrey', chair, chairs));
+  B.when('act2', true, () => B.instanced('seatGrey', chair, turned));
   for (let r = 0; r < 4; r++) B.collider(-4.45 - r * 0.95, -3.95 - r * 0.95, -3.5, 3.5);
   B.poster(Signs.banner(), [-RA + 0.12, 2.5, 0], '+x', 1.6, 3.2, { off: 0.02 });
   B.box('woodBrown', -11.8, 0, -0.5, -11.2, 1.1, 0.5); B.collider(-11.85, -11.15, -0.55, 0.55);
+  // atril: el diario del revisor y su tenaza
+  B.note({ id: 'n7', p: [-11.5, 1.105, 0.25], box: { x0: -11.85, x1: -11.15, y0: 0.9, y1: 1.4, z0: 0.02, z1: 0.5 } });
+  B.pickup({ id: 'punch', item: 'punch', p: [-11.5, 1.12, -0.25], box: { x0: -11.85, x1: -11.15, y0: 0.9, y1: 1.4, z0: -0.5, z1: -0.02 },
+    build: (b) => punchProp(b, -11.5, 1.1, -0.25), label: 'Coger la tenaza', onTake: () => Scares.after(1.2, punchTicket) });
   // caballetes con pósters (exposición)
   for (let k = 0; k < 5; k++) {
     const a = PI * 0.62 + k * 0.17, p = P(9.2, a, 0), yaw = Math.atan2(-p[0], -p[2]), fx = Math.sin(yaw), fz = Math.cos(yaw);
@@ -3887,7 +5153,7 @@ function buildZone7() {
   B.box('steel', -0.8, 0, -RA + 0.25, 0.8, 2.2, -RA + 0.32, { seg: 0.6 });
   B.box('grey', -0.86, 2.2, -RA + 0.2, 0.86, 2.28, -RA + 0.36); B.cyl('metal', [-0.5, 1.0, -RA + 0.36], [0.5, 1.0, -RA + 0.36], 0.02, 6);
   B.glowSign(Signs.exitSign(), [0, 2.55, -RA + 0.3], '+z', 0.56, 0.28, 1.4, { off: 0.01 });
-  B.door({ box: { x0: -0.85, x1: 0.85, y0: 0, y1: 2.2, z0: -RA + 0.1, z1: -RA + 0.45 }, to: 'z1', spawn: 'steelDoor', unlock: 'steel', pos: [0, 1, -RA + 0.4] });
+  B.door({ box: { x0: -0.85, x1: 0.85, y0: 0, y1: 2.2, z0: -RA + 0.1, z1: -RA + 0.45 }, to: 'z1', spawn: 'steelDoor', unlock: 'steel', pos: [0, 1, -RA + 0.4], label: 'Salida de emergencia' });
   // luces reales: luna cenital, verde de emergencia, cálida sobre la exposición
   B.realDefs[0] = { p: [0, 12, 0], color: lin(0x9ab4ff), I: 70, range: 34, group: null, bake: { p: [0, 12, 0], color: lin(0x9ab4ff), I: 70, range: 34, dir: [0, -1, 0], dmin: 0.3 } };
   B.realDefs[1] = { p: [0, 2.4, -RA + 0.9], color: lin(0x30ff90), I: 1.6, range: 6, group: null, bake: { p: [0, 2.4, -RA + 0.9], color: lin(0x30ff90), I: 1.6, range: 6, dir: [0, -0.3, 1], dmin: 0.2 } };
@@ -3901,6 +5167,11 @@ function buildZone7() {
   B.emitter({ type: 'creak', pos: [6, 8, -6], gain: 0.15, min: 20, max: 45 });
   B.emitter({ type: 'rumble', gain: 0.12, first: 40 });
   B.emitter({ type: 'roomtone', gain: 0.05, f: 160 });
+  // ---------- Objetos y sustos ----------
+  B.pickup({ id: 'bat7', item: 'battery', p: [-5.15, 0.5, 0.8], build: (b) => batteryProp(b, -5.15, 0.49, 0.8, 0.3) });
+  B.decal('grime', Signs.grime, [0, 1.6, -RA + 0.32], '+z', 3.0, 3.0, { off: 0.01 });
+  B.decal('crack', Signs.crack, [4, 0.004, 4], '+y', 2.2, 2.2);
+  B.trigger({ x0: -1.6, x1: 1.6, z0: 10.5, z1: 12.5 }, () => Scares.apparition([-3.2, H1 + 0.02, -11.9], { stare: 0.7, near: 3, life: 60 }), { id: 'z7fig' });
   B.spawn('fromZ6', 0, 16.4, 0);
   B.spawn('fromZ1', 0, -RA + 1.6, PI);
   B.menuCam = null;
@@ -3980,45 +5251,67 @@ function gcShared() {
 
 // ==== src/game/game.js ====
 /* =====================================================================
-   JUEGO — estados, fundidos, interacción, menús
+   JUEGO — estados, fundidos, interacción, menús, partida nueva / continuar
    ===================================================================== */
 const $ = (id) => document.getElementById(id);
 const Game = {
   state: 'loading', fade: 1, fadeTarget: 1, fadeSpeed: 1, fadeDone: null, busy: false, armed: true, target: null, time: 0, optionsFrom: 'menu', started: false,
+  ui: null,          // interfaz abierta encima del juego: 'inv' | 'note' | 'keypad' | null
+  spawn: 'start',    // punto de entrada de la zona actual (se guarda)
+  ending: false,
   fadeTo(v, dur = CONFIG.FADE_TIME) {
     this.fadeTarget = v; this.fadeSpeed = 1 / Math.max(0.01, dur);
     return new Promise((res) => { if (this.fade === v) res(); else this.fadeDone = res; });
   },
-  show(id) { for (const s of ['menu', 'pause', 'options', 'loading']) $(s).classList.toggle('hidden', s !== id); },
-  async start() {
+  show(id) { for (const s of ['menu', 'pause', 'options', 'loading']) $(s).classList.toggle('hidden', s !== id); if (id === 'menu') refreshMenu(); },
+  // Vacía el estado de la partida (o lo carga de un guardado)
+  resetRun(sv) {
+    for (const k of Object.keys(Flags)) delete Flags[k];
+    if (sv) Object.assign(Flags, sv.flags || {});
+    Inv.load(sv ? sv.inv : null); Notes.load(sv ? sv.notes : null);
+    Flashlight.battery = sv ? sv.battery ?? CONFIG.BATTERY_START : CONFIG.BATTERY_START;
+    Sanity.reset(sv ? sv.tension || 0 : 0); Scares.reset(sv ? sv.done : null); Ending.reset();
+    for (const z of Zones.cache.values()) z.refreshVariants();
+  },
+  async start(cont = false) {
     if (this.busy) return; this.busy = true;
     AudioSys.init(); applyAudioQuality(); enterFullscreen();
     this.show(null);
     await this.fadeTo(1, 0.6);
-    const z = Zones.activate('z1', 'start'); z.startAudio();
-    AudioSys.resetReverb(); z.updateReverb(true); Music.sync('z1'); Silence.reset();
+    const sv = cont ? Save.load() : null;
+    if (!cont) Save.clear();
+    this.resetRun(sv);
+    const zid = sv && ZONE_DEFS[sv.zone] ? sv.zone : 'z1', sp = sv ? sv.spawn : 'start';
+    const z = Zones.activate(zid, sp); Zones.prebuild(); z.startAudio();
+    AudioSys.resetReverb(); z.updateReverb(true); Music.sync(zid); Silence.reset();
     Flashlight.on = false; Player.crouch = false; Player.eye = CONFIG.EYE_HEIGHT;
-    this.state = 'playing'; this.started = true; this.armed = false;
-    Input.requestLock(); Touch.show(true);
+    this.state = 'playing'; this.started = true; this.armed = false; this.spawn = sp; this.ui = null;
+    Input.requestLock(); Touch.show(true); Hud.show(true);
     AudioSys.setWorld(1, 0.8);
+    Post.render(this.time, 1); await nextFrame();
     await this.fadeTo(0, 1.6);
     this.busy = false;
+    if (!cont) { Hud.sub('…me he quedado dormido. El último tren ya se ha ido.', 5); setTimeout(() => Hud.msg(Touch.enabled ? 'Linterna: botón de la linterna · Inventario: botón de la mochila' : 'F linterna · Tab inventario · E interactuar', 6), 5200); }
+    else Hud.msg('Partida cargada', 2.5);
+    Save.write();
   },
   pause() {
     if (this.state !== 'playing') return;
-    this.state = 'paused'; Input.keys.clear(); this.show('pause'); $('resume').classList.add('hidden'); Touch.show(false);
-    AudioSys.setWorld(0.25, 0.25); $('dot').classList.remove('on');
+    if (this.ui) this.closeUI(true);
+    this.state = 'paused'; Input.keys.clear(); this.show('pause'); $('resume').classList.add('hidden'); Touch.show(false); Hud.show(false);
+    AudioSys.setWorld(0.25, 0.25); $('dot').classList.remove('on'); Hud.label(null);
   },
   resume() {
-    this.state = 'playing'; this.show(null); AudioSys.setWorld(1, 0.3); Input.requestLock();
+    this.state = 'playing'; this.show(null); AudioSys.setWorld(1, 0.3); Input.requestLock(); Hud.show(true);
     if (Touch.enabled) { enterFullscreen(); Touch.show(true); if (AudioSys.ctx && AudioSys.ctx.state !== 'running') AudioSys.ctx.resume(); }
   },
   async quit() {
-    if (this.busy) return; this.busy = true; this.show(null); Touch.show(false);
+    if (this.busy) return; this.busy = true; this.show(null); Touch.show(false); Hud.show(false);
+    Save.write();
     AudioSys.setWorld(0, 0.3);
     await this.fadeTo(1, 0.6);
     if (document.pointerLockElement) document.exitPointerLock();
-    this.state = 'menu';
+    this.state = 'menu'; this.ui = null; Scares.clear(); Power.k = 1;
     const z = Zones.activate('z1', null); z.stopAudio(); Music.zone = null; Music.sync();
     Flashlight.on = false;
     this.show('menu');
@@ -4027,16 +5320,34 @@ const Game = {
   },
   openOptions(from) { this.optionsFrom = from; syncOptionsUI(); this.show('options'); },
   closeOptions() { this.show(this.optionsFrom); },
+  // ---------- Interfaces encima del juego (inventario, nota, teclado numérico) ----------
+  openUI(name) {
+    if (this.state !== 'playing' || this.busy) return false;
+    this.ui = name; Input.keys.clear(); Touch.show(false); Hud.label(null); $('dot').classList.remove('on');
+    if (document.pointerLockElement) document.exitPointerLock();
+    AudioSys.rustle(0.08);
+    return true;
+  },
+  closeUI(silent) {
+    if (!this.ui) return;
+    const was = this.ui; this.ui = null;
+    if (was === 'inv') Inventory.hide(); else if (was === 'note') Notes.hide(); else if (was === 'keypad') Keypad.hide();
+    if (silent) return;
+    Input.requestLock(); Touch.show(true);
+  },
   // Cambio de zona con fundido a negro
   async transition(to, spawn, wait = 0) {
     if (this.busy) return; this.busy = true;
     if (wait) await new Promise((r) => setTimeout(r, wait * 1000));
     AudioSys.setWorld(0, 0.25);
     await this.fadeTo(1, CONFIG.FADE_TIME);
+    Scares.clear();
+    if (Ending.phase) { Ending.reset(); delete Flags.trainHere; for (const zz of Zones.cache.values()) zz.refreshVariants(); }   // el tren se va si te alejas
     const z = Zones.activate(to, spawn);
     Zones.prebuild();
     AudioSys.resetReverb(); z.updateReverb(true); Music.sync(to);
-    this.armed = false;
+    this.armed = false; this.spawn = spawn;
+    Save.write();
     Post.render(this.time, 1);                 // calienta shaders/texturas con la pantalla en negro
     await nextFrame();
     AudioSys.setWorld(1, 0.6);
@@ -4049,13 +5360,23 @@ const Game = {
     if (!inside) { this.armed = true; return; }
     if (this.armed && ZONE_DEFS[inside.to]) { this.armed = false; this.transition(inside.to, inside.spawn); }
   },
+  // Volúmenes de sustos/eventos: se disparan al entrar (los que tienen id, una sola vez por partida)
+  checkTriggers() {
+    const z = Zones.current, p = Player.pos;
+    for (const t of z.triggers) {
+      const b = t.box, inside = condOk(t.cond) && p.x >= b.x0 && p.x <= b.x1 && p.z >= b.z0 && p.z <= b.z1 && p.y >= (b.y0 ?? -99) && p.y <= (b.y1 ?? 99);
+      if (inside && !t.inside && !(t.id && Scares.done[t.id])) { if (t.id) Scares.done[t.id] = true; t.fn(z); }
+      t.inside = inside;
+    }
+  },
   checkInteract(cam) {
     const z = Zones.current, o = cam.position, d = _v.set(0, 0, -1).applyQuaternion(cam.quaternion);
     let best = null, bd = CONFIG.INTERACT_DIST;
     for (const it of z.inter) { if (!condOk(it.cond)) continue; const t = rayBox(o, d, it.box); if (t !== null && t < bd) { bd = t; best = it; } }
     this.target = best; $('dot').classList.toggle('on', !!best);
+    Hud.label(best ? (typeof best.label === 'function' ? best.label() : best.label) || 'Interactuar' : null);
   },
-  interact() { if (this.target && !this.busy) this.target.action(); },
+  interact() { if (this.target && !this.busy && !this.ui) this.target.action(); },
 };
 function rayBox(o, d, b) {
   let t0 = 0, t1 = Infinity;
@@ -4066,7 +5387,12 @@ function rayBox(o, d, b) {
   }
   return t0;
 }
-
+// Menú principal: "Continuar" solo si hay partida guardada
+function refreshMenu() {
+  const has = Save.exists();
+  $('btnContinue').classList.toggle('hidden', !has);
+  $('btnStart').textContent = has ? 'Nueva partida' : 'Iniciar';
+}
 // ==== src/ui/options.js ====
 /* ---------- Opciones (UI) ---------- */
 function syncOptionsUI() {
@@ -4080,7 +5406,9 @@ function syncOptionsUI() {
 function bindUI() {
   document.querySelectorAll('[data-act]').forEach((b) => b.addEventListener('click', (e) => {
     e.stopPropagation(); const a = b.dataset.act;
-    if (a === 'start') Game.start();
+    if (a === 'start') Game.start(false);
+    else if (a === 'continue') Game.start(true);
+    else if (a === 'endMenu') Ending.toMenu();
     else if (a === 'options') Game.openOptions(Game.state === 'paused' ? 'pause' : 'menu');
     else if (a === 'back') Game.closeOptions();
     else if (a === 'resume') Game.resume();
@@ -4113,6 +5441,41 @@ function applyQuality(rebuild) {
   }
 }
 
+// ==== src/ui/hud.js ====
+/* =====================================================================
+   HUD — mensajes breves, etiqueta de interacción, subtítulos, pila
+   ===================================================================== */
+const Hud = {
+  visible: false, lastLabel: undefined, subT: 0, batShown: false,
+  show(on) { this.visible = on; $('hud').classList.toggle('hidden', !on); },
+  // Mensaje en la parte baja (se apilan como mucho 3)
+  msg(text, dur = 3.2) {
+    const box = $('toasts'), el = document.createElement('div'); el.className = 'toast'; el.innerHTML = text;
+    box.appendChild(el); while (box.children.length > 3) box.firstChild.remove();
+    requestAnimationFrame(() => el.classList.add('on'));
+    setTimeout(() => { el.classList.remove('on'); setTimeout(() => el.remove(), 600); }, dur * 1000);
+  },
+  pickup(id, n) {
+    const it = ITEMS[id];
+    this.msg(`<img src="${ItemIcon.get(id)}" alt=""> ${it.name}${n > 1 ? ' ×' + n : ''} <span>${it.jp}</span>`, 3.5);
+  },
+  // Texto bajo el punto de mira con lo que hará la tecla E / el toque
+  label(text) {
+    if (text === this.lastLabel) return; this.lastLabel = text;
+    const el = $('hint'); if (!text) { el.classList.remove('on'); return; }
+    el.innerHTML = (Touch.enabled ? '' : '<kbd>E</kbd> ') + text; el.classList.add('on');
+  },
+  // Subtítulo (voces, susurros, megafonía)
+  sub(text, dur = 3) { const el = $('sub'); el.textContent = text; el.classList.add('on'); this.subT = dur; },
+  update(dt) {
+    if (this.subT > 0) { this.subT -= dt; if (this.subT <= 0) $('sub').classList.remove('on'); }
+    if (!this.visible) return;
+    // indicador de pila: visible con la linterna encendida o con poca carga
+    const b = Flashlight.battery, show = Flashlight.on || b < 25;
+    if (show !== this.batShown) { this.batShown = show; $('batt').classList.toggle('on', show); }
+    if (show) { const s = $('battFill'); s.style.width = b.toFixed(0) + '%'; s.classList.toggle('low', b < 15); }
+  },
+};
 // ==== src/game/loop.js ====
 /* =====================================================================
    BUCLE PRINCIPAL
@@ -4138,16 +5501,17 @@ function frame() {
   }
   if (z) {
     if (Game.state === 'playing') {
-      if (!Game.busy) Player.update(dt, z);
+      if (!Game.busy && !Game.ui) Player.update(dt, z);
       Player.applyCamera(cam, Game.time);
-      if (!Game.busy) { Game.checkPortals(); Game.checkInteract(cam); }
+      if (!Game.busy && !Game.ui && !Game.ending) { Game.checkPortals(); Game.checkTriggers(); Game.checkInteract(cam); }
+      Sanity.update(dt); Scares.update(dt, cam); Ending.update(dt);
     } else if (Game.state === 'menu' || Game.state === 'loading') menuCamera(Game.time);
     else if (Game.state === 'paused') Player.applyCamera(cam, Game.time);
     cam.updateMatrixWorld();
     Flashlight.update(dt, cam, Game.time);
     z.update(dt, Game.time, cam);
     AudioSys.updateListener(cam);
-    Music.update(dt); Silence.update(dt); Touch.update();
+    Music.update(dt); Silence.update(dt); Touch.update(); Hud.update(dt); Particles.update(cam, Game.time);
   }
   Post.render(Game.time, Game.fade);
   if (DEBUG) {
@@ -4173,7 +5537,8 @@ document.addEventListener('visibilitychange', () => { if (document.hidden && Gam
    ===================================================================== */
 async function boot() {
   loadSettings(); Q = QUALITY[S.quality];
-  initWorld(); fitCamera(); Post.init(); applyQuality(false); initInput(); Touch.init(); bindUI(); syncOptionsUI();
+  initWorld(); fitCamera(); Post.init(); applyQuality(false); initInput(); Touch.init(); bindUI(); bindGameplayUI(); syncOptionsUI();
+  Particles.init(); Scares.init();
   if (DEBUG) $('fps').classList.remove('hidden');
   await nextFrame(); await nextFrame();
   const z = Zones.activate('z1', 'start');
@@ -4185,7 +5550,9 @@ async function boot() {
   Game.show('menu');
   Game.fadeTo(0, 2.0);
   if (DEBUG) window.__game = { Flags, Music, TEXT, Tex, TEX, Game, Zones, Player, AudioSys, World, Flashlight, S, Q: () => Q, CONFIG,
+    Inv, Notes, Sanity, Scares, Save, Ending, Keypad, Inventory, Hud, Power, setFlag,
     tp(id, spawn) { return Game.transition(id, spawn); },
+    act(label, n = 0) { const l = Zones.current.inter.filter((i) => condOk(i.cond) && (typeof i.label === 'function' ? i.label() : i.label) === label); if (l[n]) { l[n].action(); return true; } return false; },
     set(x, z, yaw = Player.yaw, pitch = 0) { const g = Zones.current.groundTop(x, z); Player.pos.set(x, g ? g.y : Player.pos.y, z); Player.camY = Player.pos.y + Player.eye; Player.yaw = yaw; Player.pitch = pitch; } };
   return z;
 }

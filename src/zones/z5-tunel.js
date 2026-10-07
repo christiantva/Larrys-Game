@@ -57,7 +57,20 @@ function buildZone5() {
   B.box('steel', AX0, TY, 1.7, AX0 + 0.05, TY + 2.0, 2.7, { seg: 0.6 });
   B.box('rust', AX0, TY + 2.0, 1.64, AX0 + 0.08, TY + 2.08, 2.76); B.box('rust', AX0, TY, 1.64, AX0 + 0.08, TY + 2.0, 1.7); B.box('rust', AX0, TY, 2.7, AX0 + 0.08, TY + 2.0, 2.76);
   B.poster(Signs.construction(), [AX0, TY + 1.5, 3.9], '+x', 1.0, 0.5, { off: 0.01 });
-  B.door({ box: { x0: AX0 - 0.1, x1: AX0 + 0.3, y0: TY, y1: TY + 2.0, z0: 1.7, z1: 2.7 }, to: 'z6', spawn: 'fromZ5', pos: [AX0 + 0.2, TY + 1, 2.2] });
+  B.door({ box: { x0: AX0 - 0.1, x1: AX0 + 0.3, y0: TY, y1: TY + 2.0, z0: 1.7, z1: 2.7 }, to: 'z6', spawn: 'fromZ5', pos: [AX0 + 0.2, TY + 1, 2.2],
+    flag: 'power', msg: 'Es una puerta eléctrica. No hay corriente.' });
+  // cuadro eléctrico: falta el fusible
+  B.box('grey', AX0, TY + 1.0, -0.45, AX0 + 0.1, TY + 1.9, 0.15);
+  B.poster(Signs.fuseBox, [AX0 + 0.1, TY + 1.45, -0.15], '+x', 0.5, 0.75, { off: 0.004 });
+  B.when('power', false, () => B.emissiveBox(0xff2a1a, 3, AX0 + 0.1, TY + 1.95, -0.2, AX0 + 0.14, TY + 2.0, -0.1));
+  B.when('power', true, () => B.emissiveBox(0x2aff6a, 3, AX0 + 0.1, TY + 1.95, -0.2, AX0 + 0.14, TY + 2.0, -0.1));
+  B.interact({ x0: AX0, x1: AX0 + 0.35, y0: TY + 0.9, y1: TY + 2.0, z0: -0.5, z1: 0.2 }, () => {
+    if (Flags.power) { Hud.msg('El cuadro zumba. Hay corriente.'); return; }
+    if (!Inv.has('fuse')) { AudioSys.click(AudioSys.tmp(1, 0.2), 0.2, 1800); Hud.msg('Hay un hueco vacío: FUSE 30A.'); return; }
+    Inv.take('fuse'); setFlag('power'); AudioSys.unlock([AX0 + 0.2, TY + 1.4, -0.15]); AudioSys.powerUp();
+    Hud.msg('Colocas el fusible. Algo arranca con un zumbido dentro del muro.');
+    Scares.after(2.5, () => Scares.blackout(1.6, () => Scares.apparition([-49.6, TY, 2.6], { stare: 0.4, near: 4, life: 25 })));
+  }, 'Cuadro eléctrico');
   // cables colgando a lo largo de la bóveda
   const hookZ = AZ - Math.sqrt(AR * AR - 1) + 0.08;
   for (const dy of [0.95, 1.2]) for (let x = AX0 + 2; x < NX0 - 1; x += 4) {
@@ -77,7 +90,7 @@ function buildZone5() {
   B.box('steel', 11.95, SY, -2.75, 12, SY + 2.0, -1.85, { seg: 0.6 });
   B.box('rust', 11.92, SY + 2.0, -2.81, 12, SY + 2.08, -1.79);
   B.poster(Signs.maintenance(), [11.95, SY + 2.35, -2.3], '-x', 0.8, 0.4);
-  B.door({ box: { x0: 11.8, x1: 12.1, y0: SY, y1: SY + 2.0, z0: -2.75, z1: -1.85 }, to: 'z4', spawn: 'fromZ5', pos: [11.95, SY + 1, -2.3], kind: 'gate' });
+  B.door({ box: { x0: 11.8, x1: 12.1, y0: SY, y1: SY + 2.0, z0: -2.75, z1: -1.85 }, to: 'z4', spawn: 'fromZ5', pos: [11.95, SY + 1, -2.3], kind: 'gate', flag: 'maint', msg: 'Cerrada con llave desde el otro lado.' });
   B.reverbArea({ x0: 4.5, x1: 12.2, z0: LZ0, z1: -1.6, y0: 1.2, y1: 8 }, 'stairwell');
   // ---------- Puerta de servicio (atajo hacia la escalera de la zona 2) ----------
   B.box('steel', 15.5, 0, LZ0, 16.4, 2.0, LZ0 + 0.05, { seg: 0.6 });
@@ -127,6 +140,17 @@ function buildZone5() {
   { const g = B.grp('red', 'none'); g.real = 2; g.glows.push(rg); }
   B.glint({ L: [AX0 + 0.3, TY + 2.5, 2.2], fy: TY + 0.03, color: lin(0xff2a14), k: 0.5, size: 0.6, len: 1.4, b: [AX0, AX0 + 14, 1, 4] });
   B.occluder(4.5, 12, CH, 7.1, -1.7, -1.6);
+  // ---------- Objetos, notas y sustos ----------
+  B.note({ id: 'n5', p: [-2.4, 1.45, LZ0], facing: '+z', w: 0.24, h: 0.31 });
+  B.box('cardboard', 1.0, 0, -2.65, 1.6, 0.4, -2.1);                                 // caja dentro del andamio
+  B.pickup({ id: 'fuse', item: 'fuse', p: [1.3, 0.42, -2.3], box: { x0: 1.0, x1: 1.6, y0: 0.3, y1: 0.7, z0: -2.65, z1: -2.0 }, build: (b) => fuseProp(b, 1.3, 0.4, -2.3), label: 'Recoger fusible', msg: 'Un fusible de 30 A. El cuadro de la obra está al fondo del túnel.' });
+  B.pickup({ id: 'bat5', item: 'battery', p: [-36, TY + 0.17, 2.0], build: (b) => batteryProp(b, -36, TY + 0.16, 2.0, 1.6) });
+  B.decal('tape', Signs.tape, [1.3, 1.25, -1.84], '+z', 1.7, 0.1);
+  B.decal('grafB', () => Signs.graffiti('0:42', 'rgba(170,24,18,0.8)'), [-30, -0.45, AZ + AR - 0.02], '-z', 2.6, 0.65);
+  B.decal('crack', Signs.crack, [8, 1.6, LZ0], '+z', 1.8, 1.8);
+  B.decal('grime', Signs.grime, [-8, 1.7, LZ0], '+z', 3.0, 3.0);
+  B.trigger({ x0: -24, x1: -21, z0: -1, z1: 5.5 }, (z) => Scares.lampBurst(z, 'w1', [-27, AYB + AR - 0.8, AZ + 0.4]), { id: 'z5pop' });
+  B.trigger({ x0: -46, x1: -43, z0: -1, z1: 5.5 }, () => Scares.steps(7, 'gravel', 0.62), { id: 'z5steps' });
   // ---------- Sonido ----------
   B.emitter({ type: 'hum', pos: [2, 2.65, LZ0 + 0.2], gain: 0.05, group: 'n0', sizzle: 2.4 });
   B.emitter({ type: 'hum', pos: [18, 2.65, LZ0 + 0.2], gain: 0.05, group: 'n1', sizzle: 3.2 });

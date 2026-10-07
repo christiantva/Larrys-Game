@@ -33,7 +33,14 @@ const CONFIG = {
   FLASH_INTENSITY: 9,      // linterna (candelas)
   FLASH_RANGE: 16,
   FLASH_LAG: 9,            // cuanto más alto, menos retraso al seguir la cámara
-  DYNAMIC_RES: true,       // baja la resolución interna sola si los fps caen por debajo de ~40
+  DYNAMIC_RES: true,
+  // --- Terror ---
+  BATTERY_START: 70,       // % de pila de la linterna al empezar
+  BATTERY_DRAIN: 0.3,      // % por segundo con la linterna encendida (~4 min con la carga inicial)
+  BATTERY_PACK: 45,        // % que recarga cada pila
+  DARK_LEVEL: 0.045,       // por debajo de esta luz (luminancia horneada) se considera oscuridad
+  TENSION_RISE: 0.018,     // tensión por segundo a oscuras y sin linterna
+  TENSION_FALL: 0.03,      // tensión que se recupera por segundo en zonas iluminadas       // baja la resolución interna sola si los fps caen por debajo de ~40
   // --- Audio ---
   MASTER: 0.9,
   HUM_VOLUME: 1.0,         // zumbido de fluorescentes

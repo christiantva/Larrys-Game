@@ -22,16 +22,17 @@ function frame() {
   }
   if (z) {
     if (Game.state === 'playing') {
-      if (!Game.busy) Player.update(dt, z);
+      if (!Game.busy && !Game.ui) Player.update(dt, z);
       Player.applyCamera(cam, Game.time);
-      if (!Game.busy) { Game.checkPortals(); Game.checkInteract(cam); }
+      if (!Game.busy && !Game.ui && !Game.ending) { Game.checkPortals(); Game.checkTriggers(); Game.checkInteract(cam); }
+      Sanity.update(dt); Scares.update(dt, cam); Ending.update(dt);
     } else if (Game.state === 'menu' || Game.state === 'loading') menuCamera(Game.time);
     else if (Game.state === 'paused') Player.applyCamera(cam, Game.time);
     cam.updateMatrixWorld();
     Flashlight.update(dt, cam, Game.time);
     z.update(dt, Game.time, cam);
     AudioSys.updateListener(cam);
-    Music.update(dt); Silence.update(dt); Touch.update();
+    Music.update(dt); Silence.update(dt); Touch.update(); Hud.update(dt); Particles.update(cam, Game.time);
   }
   Post.render(Game.time, Game.fade);
   if (DEBUG) {

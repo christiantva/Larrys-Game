@@ -80,7 +80,14 @@ function buildZone3() {
     B.glowSign(Signs.ticketMachine, [x + 0.39, 1.02, Z0 + 0.62], '+z', 0.66, 1.08, 1.05, { key: 'tm', off: 0.003 });
   }
   B.collider(-6, -6 + 6 * 0.84, Z0, Z0 + 0.66);
-  B.interact({ x0: -6, x1: -6 + 6 * 0.84, y0: 0.4, y1: 1.7, z0: Z0 + 0.5, z1: Z0 + 0.7 }, () => AudioSys.beep([-3.5, 1.1, Z0 + 0.7]));
+  // comprar un billete con las monedas
+  B.interact({ x0: -6, x1: -6 + 6 * 0.84, y0: 0.4, y1: 1.7, z0: Z0 + 0.5, z1: Z0 + 0.7 }, () => {
+    const pos = [-3.5, 1.1, Z0 + 0.7]; AudioSys.beep(pos);
+    if (Inv.has('ticket') || Inv.has('punched')) { Hud.msg('Ya tienes un billete.'); return; }
+    if (!Inv.has('coins')) { Hud.msg('きっぷ — Necesitas monedas. La máquina no acepta billetes a esta hora.'); return; }
+    Inv.take('coins'); AudioSys.ticketPrint(pos); Hud.msg('Las monedas caen dentro. La máquina imprime un billete…', 3);
+    Scares.after(1.6, () => Inv.add('ticket'));
+  }, 'Máquina de billetes');
   B.glowSign(Signs.kippu(), [-3.5, 2.66, Z0], '+z', 5.0, 0.3, 1.3);
   B.glowSign(Signs.fareMap(), [-3.5, 2.15, Z0], '+z', 4.0, 0.62, 1.0);
   B.bake({ p: [-3.5, 1.3, Z0 + 1.2], color: lin(0xdfe8ff), I: 7, range: 7, tube: { axis: 'x', len: 5 }, dir: [0, 0, 1], dmin: 0.1 });
@@ -93,7 +100,7 @@ function buildZone3() {
   B.collider(-13.6, -11.5, Z1 - 0.8, Z1);
   B.bake({ p: [-12.5, 1.1, Z1 - 1.4], color: lin(0xe6f0ff), I: 6, range: 7, dir: [0, 0, -1], dmin: 0.05 });
   B.glint({ L: [-12.5, 1.4, Z1 - 0.8], fy: 0, color: lin(0xe6f0ff), k: 0.4, size: 0.9, len: 0.8, b: [X0, X1, Z0, Z1] });
-  B.interact({ x0: -13.6, x1: -11.5, y0: 0.2, y1: 1.8, z0: Z1 - 0.9, z1: Z1 - 0.7 }, () => AudioSys.beep([-12.5, 1.0, Z1 - 0.8]));
+  B.interact({ x0: -13.6, x1: -11.5, y0: 0.2, y1: 1.8, z0: Z1 - 0.9, z1: Z1 - 0.7 }, () => { AudioSys.beep([-12.5, 1.0, Z1 - 0.8]); Hud.msg('売切 — agotado.'); }, 'Máquina expendedora');
   for (const [x, t] of [[-10.9, 'かん・びん'], [-10.45, 'ペットボトル']]) { B.box('blue', x, 0, Z1 - 0.45, x + 0.4, 0.95, Z1); B.poster(Signs.binLabel(t), [x + 0.2, 0.72, Z1 - 0.45], '-z', 0.36, 0.18); }
   B.collider(-10.9, -10.05, Z1 - 0.45, Z1);
   // ---------- Torniquetes (改札) ----------
@@ -108,11 +115,21 @@ function buildZone3() {
     B.collider(GX0, GX1, zc - 0.12, zc + 0.12);
   }
   for (const [a, b] of [[Z0, -5.35], [5.35, Z1]]) { B.box('metal', GX0 + 0.66, 0, a, GX0 + 0.72, 1.05, b); B.collider(GX0 + 0.55, GX0 + 0.85, a, b); }
+  // sin billete las aletas de los torniquetes están cerradas
+  B.when('gate', false, () => {
+    for (let i = 0; i < 11; i++) { const za = -5.225 + i * 0.95 + 0.12, zb = za + 0.71; B.box('red', GX0 + 0.58, 0.5, za, GX0 + 0.64, 0.92, za + 0.3); B.box('red', GX0 + 0.58, 0.5, zb - 0.3, GX0 + 0.64, 0.92, zb); }
+    B.collider(GX0, GX1, -5.35, 5.35);
+    B.interact({ x0: GX0 - 0.25, x1: GX0 + 0.1, y0: 0, y1: 1.2, z0: -5.35, z1: 5.35 }, () => {
+      const pos = [GX0, 0.9, Player.pos.z];
+      if (Inv.has('ticket') || Inv.has('punched')) { AudioSys.gateOpen(pos); setFlag('gate'); Hud.msg('El torniquete se traga el billete y lo devuelve. Las aletas se abren.'); }
+      else { AudioSys.keyBeep(false); Hud.msg('改札 — Necesitas un billete.'); }
+    }, 'Torniquete');
+  });
   B.bake({ p: [GX0 - 0.3, 0.9, 0], color: lin(0x6ab0ff), I: 1.2, range: 3, tube: { axis: 'z', len: 10.5 }, dir: [-1, 0, 0], dmin: 0.2, bounce: 0.02 });
   // panel LED "servicio terminado" sobre los torniquetes
   B.box('dark', 5.94, 2.2, -1.8, 6.08, 2.7, 1.8);
-  B.glowSign(Signs.ledBoard, [5.94, 2.45, 0], '-x', 3.4, 0.45, 1.7, { key: 'led', off: 0.003 });
-  B.glowSign(Signs.ledBoard, [6.08, 2.45, 0], '+x', 3.4, 0.45, 1.7, { key: 'led', off: 0.003 });
+  B.when('act2', false, () => { B.glowSign(Signs.ledBoard, [5.94, 2.45, 0], '-x', 3.4, 0.45, 1.7, { key: 'led', off: 0.003 }); B.glowSign(Signs.ledBoard, [6.08, 2.45, 0], '+x', 3.4, 0.45, 1.7, { key: 'led', off: 0.003 }); });
+  B.when('act2', true, () => { B.glowSign(Signs.ledBoardAct2, [5.94, 2.45, 0], '-x', 3.4, 0.45, 1.9, { key: 'led2', off: 0.003 }); B.glowSign(Signs.ledBoardAct2, [6.08, 2.45, 0], '+x', 3.4, 0.45, 1.9, { key: 'led2', off: 0.003 }); });
   for (const z of [-1.5, 1.5]) B.cyl('metal', [6.01, 2.7, z], [6.01, CH, z], 0.012, 5);
   B.bake({ p: [5.6, 2.4, 0], color: lin(0xff8a2a), I: 1.4, range: 4, tube: { axis: 'z', len: 3 }, dir: [-1, -0.2, 0], dmin: 0.2, bounce: 0.03 });
   // lado de pago: máquinas de ajuste, oficina
@@ -170,6 +187,16 @@ function buildZone3() {
   B.tactile('bars', -3.35, 5.55, -0.15, 0.15, 0, 'x'); B.tactile('dots', 5.55, 5.85, -0.45, 0.45, 0);
   B.tactile('bars', 8.1, SW0 - 0.6, -0.15, 0.15, 0, 'x'); B.tactile('dots', SW0 - 0.6, SW0 - 0.3, -SZ, SZ, 0);
   B.tactile('dots', -5.35, -5.05, -0.15, 0.15, 0); B.tactile('bars', -5.35, -5.05, 0.15, Z1 + 1.5, 0, 'z');
+  // ---------- Objetos, notas y sustos ----------
+  B.note({ id: 'n3', p: [-1.0, 0.004, -6.95] });
+  B.pickup({ id: 'bat3', item: 'battery', p: [-4.0, 0.01, 4.25], build: (b) => batteryProp(b, -4.0, 0, 4.25, 2.1) });
+  B.decal('grime', Signs.grime, [13.2, 1.6, Z0], '+z', 3.0, 2.4);
+  B.decal('tape', Signs.tape, [13.2, 1.2, Z0 + 0.05], '+z', 4.4, 0.12, { off: 0.03 });
+  B.decal('tally', Signs.tally, [-24.9, 1.3, 0], '+x', 1.2, 0.6, { off: 0.01 });
+  B.decal('crack', Signs.crack, [0, 0.004, 5.5], '+y', 2.0, 2.0);
+  // al cruzar los torniquetes: apagón, y al volver la luz hay alguien en la escalera
+  B.trigger({ x0: 8.2, x1: 10.2, z0: -4, z1: 4 }, (z) => Scares.blackout(4.2, () => { const g = z.groundTop(12.8, 0); Scares.apparition([12.8, g ? g.y : -1.2, 0.2], { stare: 0.35, near: 3, life: 20 }); }), { id: 'z3black', cond: { flag: 'gate', state: true } });
+  B.when('act2', true, () => B.trigger({ x0: -14, x1: -10, z0: -1.5, z1: 1.5 }, () => { Hud.sub('«まもなく…終点です»', 3); AudioSys.whisper(null, 0.3); }, { id: 'z3wh' }));
   // ---------- Sonido ----------
   B.emitter({ type: 'hum', pos: [-11.2, CH - 0.1, 2.4], gain: 0.045, group: 'ent' });
   B.emitter({ type: 'hum', pos: [-3.6, CH - 0.1, -6], gain: 0.045, group: 'mach' });

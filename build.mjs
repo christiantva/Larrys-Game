@@ -28,7 +28,6 @@ export const ORDER = [
   'zones/assets/textures-z6-z7.js',
   'game/flags.js',
   'zones/assets/textures-z3-z5.js',
-  'render/decals.js',
   // --- render: geometría, luz horneada, efectos ---
   'render/batch.js',
   'render/bake.js',
@@ -57,7 +56,6 @@ export const ORDER = [
   'gameplay/keypad.js',
   'gameplay/sanity.js',
   'gameplay/scares.js',
-  'gameplay/anomalies.js',
   'gameplay/save.js',
   'gameplay/ending.js',
   // --- carteles y props ---

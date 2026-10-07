@@ -97,6 +97,8 @@ function buildZone6() {
   // ---------- Detalles: teléfono público, banco, cajas, poste de barbero, máquina rota ----------
   B.box('phoneGreen', -10.9, 0.8, 6.6, -10.5, 1.4, 7.1); B.box('grey', -10.95, 0, 6.7, -10.6, 0.8, 7.0);
   B.poster(Signs.phone(), [-10.48, 1.55, 6.85], '+x', 0.4, 0.15); B.collider(-11.0, -10.45, 6.55, 7.15);
+  B.box('dark', -10.5, 1.0, 6.65, -10.44, 1.35, 6.75);                                       // auricular colgado
+  B.interact({ x0: -10.95, x1: -10.4, y0: 0.8, y1: 1.5, z0: 6.55, z1: 7.15 }, () => Scares.phoneAnswer(), 'Teléfono');
   B.box('woodBrown', 2.6, 0.42, -4.7, 4.0, 0.47, -4.3); for (const x of [2.7, 3.9]) B.box('dark', x - 0.03, 0, -4.65, x + 0.03, 0.42, -4.35); B.collider(2.55, 4.05, -4.75, -4.25);
   for (const [x, z, s] of [[-19.5, 0.7, 0.5], [-19.0, 0.8, 0.4], [-19.3, 0.75, 0.35]]) B.box('cardboard', x - s / 2, s === 0.35 ? 0.5 : 0, z - s / 2, x + s / 2, (s === 0.35 ? 0.5 : 0) + s, z + s / 2);
   B.collider(-19.8, -18.75, 0.4, 1.2);
@@ -135,12 +137,35 @@ function buildZone6() {
   B.glowSign(Tex.windowBand().image, [7.8, 2.72 + 1.15, -21.6], '+z', 2.4, 2.3, 0.45, { key: 'door', off: 0.002 });
   for (const x of [6.67, 8.93]) B.rail([[x, 0.85, -15.5], [x, 0.85, -16], [x, 2.72 + 0.85, -20.8], [x, 2.72 + 0.85, -21.2]], [x < 7 ? -1 : 1, 0], { key: 'rust' });
   B.bake({ p: [7.8, 2.72 + 1.2, -21.2], color: lin(0x7a9ae0), I: 2.5, range: 7, dir: [0, -0.2, 1], dmin: 0.2 });
-  B.portal({ x0: 6.6, x1: 9.0, z0: -21.8, z1: -19.8, y0: 1.5, y1: 6 }, 'z7', 'fromZ6');
+  B.when('code', true, () => B.portal({ x0: 6.6, x1: 9.0, z0: -21.8, z1: -19.8, y0: 1.5, y1: 6 }, 'z7', 'fromZ6'));
+  // puerta de cristal con teclado numérico (clave: la hora en que se paró todo)
+  B.when('code', false, () => {
+    B.box('glass', 6.62, 2.0, -19.62, 8.98, 4.45, -19.58, { seg: 2 }); B.collider(6.6, 9.0, -19.66, -19.5, 1.0, 6);
+    for (const x of [7.78, 7.82]) B.box('metal', x - 0.02, 2.0, -19.64, x + 0.02, 4.45, -19.56);
+    B.box('metal', 6.6, 4.45, -19.66, 9.0, 4.55, -19.54);
+  });
+  B.box('dark', 8.94, 3.05, -19.36, 9.0, 3.55, -19.04);
+  B.glowSign(Signs.keypadPanel(), [8.935, 3.3, -19.2], '-x', 0.16, 0.26, 0.8, { off: 0.002 });
+  B.interact({ x0: 8.7, x1: 9.0, y0: 2.9, y1: 3.7, z0: -19.45, z1: -18.95 }, () => {
+    if (Flags.code) { AudioSys.keyBeep(true); Hud.msg('La puerta ya está abierta.'); return; }
+    Keypad.open('0042', () => { setFlag('code'); AudioSys.doorOpen([7.8, 3.2, -19.6], 'gate'); Hud.msg('Clic. La puerta de cristal se desbloquea.'); Save.write(); });
+  }, 'Teclado');
   B.reverbArea({ x0: 6.6, x1: 9.0, z0: -22, z1: -16, y0: -1, y1: 7 }, 'stairwell');
   // puerta al túnel (vuelta a la zona 5)
   B.box('steel', -22, 0, -0.5, -21.95, 2.0, 0.5, { seg: 0.6 }); B.box('rust', -22, 2.0, -0.56, -21.92, 2.08, 0.56);
   B.cyl('metal', [-21.95, 1.0, 0.35], [-21.88, 1.0, 0.35], 0.018, 6, { caps: true });
   B.door({ box: { x0: -22.1, x1: -21.8, y0: 0, y1: 2.0, z0: -0.5, z1: 0.5 }, to: 'z5', spawn: 'fromZ6', pos: [-21.9, 1, 0] });
+  // ---------- Objetos, notas y sustos ----------
+  B.note({ id: 'n6', p: [3.3, 0.475, -4.5] });
+  B.pickup({ id: 'bat6', item: 'battery', p: [8.3, 0.01, -7.4], build: (b) => batteryProp(b, 8.3, 0, -7.4, 2.6) });
+  B.decal('hands', Signs.hands, [-13.0, 1.1, -1.12], '+z', 1.6, 1.6, { off: 0.07 });
+  B.decal('grafA', () => Signs.graffiti('でられない'), [-5.5, 1.2, 1.2], '-z', 2.4, 0.6, { off: 0.07 });
+  B.decal('tally', Signs.tally, [-3.2, 1.3, -6.5], '+x', 1.0, 0.5, { off: 0.07 });
+  B.decal('grime', Signs.grime, [9.0, 1.4, -4.0], '-x', 2.6, 2.6); B.decal('grime', Signs.grime, [-22, 1.4, 0.8], '+x', 2.0, 2.0);
+  B.decal('crack', Signs.crack, [-2, CH - 0.004, -10], '-y', 1.6, 1.6);
+  B.trigger({ x0: -11.2, x1: -8.8, z0: 0, z1: 2.2 }, () => Scares.phoneStart([-10.7, 1.2, 6.85]), { id: 'z6phone' });
+  B.trigger({ x0: -14, x1: -12, z0: -1.2, z1: 1.2 }, () => { Scares.slam([-17.5, 1.2, -1.3], 0.8); AudioSys.shutterRattle([-17.5, 1.2, -1.3]); }, { id: 'z6slam' });
+  B.trigger({ x0: 6.6, x1: 9.0, z0: -6.2, z1: -5.0 }, () => Scares.apparition([7.8, 0, -15.4], { stare: 0.5, near: 4, life: 30 }), { id: 'z6fig' });
   // ---------- Sonido ----------
   B.emitter({ type: 'hum', pos: [LX, LY, LZ], gain: 0.05, group: 'lamp', sizzle: 2.0, harm: [0.7, 0.5, 0.3, 0.2] });
   B.emitter({ type: 'sign', pos: [8.9, 2.45, -10.9], gain: 0.04, group: 'luna' });

@@ -64,14 +64,22 @@ function buildZone2() {
   B.cyl('metal', [0.36, Y1 + 1.0, -10.16], [0.36, Y1 + 1.0, -10.1], 0.02, 6, { caps: true }); B.cyl('metal', [0.36, Y1 + 1.0, -10.1], [0.22, Y1 + 1.0, -10.1], 0.016, 6, { caps: true });
   B.poster(Signs.staffOnly(), [0, Y1 + 1.55, -10.16], '+z', 0.56, 0.14, { off: 0.003 });
   // puerta de servicio: atajo hacia el túnel en obras (se desbloquea desde el otro lado)
-  B.door({ box: { x0: -0.5, x1: 0.5, y0: Y1, y1: Y1 + 2.05, z0: -10.25, z1: -10.1 }, to: 'z5', spawn: 'fromZ2', flag: 'svcDoor', pos: [0, Y1 + 1.0, -10.1] });
+  B.door({ box: { x0: -0.5, x1: 0.5, y0: Y1, y1: Y1 + 2.05, z0: -10.25, z1: -10.1 }, to: 'z5', spawn: 'fromZ2', flag: 'svcDoor', pos: [0, Y1 + 1.0, -10.1], msg: 'Solo personal. Cerrada desde el otro lado.' });
   B.glowSign(Signs.exitSign(), [0, Y1 + 2.35, -10.16], '+z', 0.5, 0.25, 1.4);
   B.bake({ p: [0, Y1 + 2.3, -10.0], color: lin(0x2aff8a), I: 0.22, range: 3, dir: [0, 0, 1], dmin: 0.1, bounce: 0.02 });
   B.glow([0, Y1 + 2.35, -10.05], [0.02, 0.12, 0.05], 0.8);
   // ---------- Carteles y detalles de "vida pasada" ----------
-  B.poster(Signs.rushPoster(), [-W, stairF1(-2.4) + 1.55, -2.4], '+x', 0.6, 0.84, { off: 0.02 });
-  B.poster(Signs.lastTrain(), [-W, stairF1(-4.9) + 1.55, -4.9], '+x', 0.6, 0.84, { off: 0.02 });
-  B.poster(Signs.manners(), [W, stairF1(-3.6) + 1.55, -3.6], '-x', 0.6, 0.84, { off: 0.02 });
+  B.when('act2', false, () => {
+    B.poster(Signs.rushPoster(), [-W, stairF1(-2.4) + 1.55, -2.4], '+x', 0.6, 0.84, { off: 0.02 });
+    B.poster(Signs.lastTrain(), [-W, stairF1(-4.9) + 1.55, -4.9], '+x', 0.6, 0.84, { off: 0.02 });
+    B.poster(Signs.manners(), [W, stairF1(-3.6) + 1.55, -3.6], '-x', 0.6, 0.84, { off: 0.02 });
+  });
+  // 2º acto: los tres pósters dicen lo mismo
+  B.when('act2', true, () => {
+    for (const [x, z, f] of [[-W, -2.4, '+x'], [-W, -4.9, '+x'], [W, -3.6, '-x']]) B.poster(Signs.scrawl, [x, stairF1(z) + 1.55, z], f, 0.6, 0.84, { off: 0.02, key: 'scrawl' });
+    // paraguas olvidados que antes no estaban
+    for (let k = 0; k < 4; k++) { const x = 1.6 + k * 0.5; B.cyl('dark', [x, Y1 + 0.02, -10.1], [x + 0.05, Y1 + 0.86, -10.0], 0.009, 5); B.cyl('umbrella', [x + 0.005, Y1 + 0.18, -10.1], [x + 0.045, Y1 + 0.82, -10.02], 0.016, 10, { r2: 0.075 }); }
+  });
   B.poster(Signs.notice(21, 'お願い'), [W, 1.5, 1.4], '-x', 0.32, 0.45);
   for (const [z, r] of [[-2.4, 0], [-4.9, 0], [-3.6, 1]]) { const y = stairF1(z) + 1.55, x0 = r ? W - 0.015 : -W, x1 = r ? W : -W + 0.015; B.box('metal', x0, y - 0.45, z - 0.33, x1, y + 0.45, z + 0.33, { skip: [r ? 'px' : 'nx'] }); }
   B.glowSign(Signs.gates(), [2.4, Y1 + 2.1, -10.17], '+z', 1.6, 0.4, 1.1);
@@ -90,7 +98,7 @@ function buildZone2() {
   B.box('shutter', 12.9, Y2, -9.95, 13.0, Y2 + 2.3, -8.65, { seg: 0.6 });
   B.box('grey', 12.7, Y2 + 2.3, -10.2, 13.0, Y2 + 2.55, -7.2);
   B.collider(12.85, 13.05, -10.2, -8.6);
-  B.interact({ x0: 12.8, x1: 13.0, y0: Y2, y1: Y2 + 2.3, z0: -9.95, z1: -8.65 }, () => AudioSys.shutterRattle([12.9, Y2 + 1.1, -9.3]));
+  B.interact({ x0: 12.8, x1: 13.0, y0: Y2, y1: Y2 + 2.3, z0: -9.95, z1: -8.65 }, () => { AudioSys.shutterRattle([12.9, Y2 + 1.1, -9.3]); Hud.msg('La persiana no se mueve.'); }, 'Persiana');
   B.reverbArea({ x0: 13.0, x1: 17.5, z0: -8.7, z1: -7.1, y0: Y2 - 1, y1: Y2 + 3 }, 'corridor');
   // cartel de precaución + charco
   B.poster(Signs.caution(), [10.9, Y2 + 0.42, -7.7], '-x', 0.36, 0.48, { off: 0.0 });
@@ -122,6 +130,19 @@ function buildZone2() {
   B.glint({ L: [11.2, Y2 + CH, -8.7], fy: Y2, color: lin(0xbcd2ff), k: 0.3, size: 0.7, b: [9.4, 13, -10.2, -7.2] });
   B.occluder(-W - 0.3, -W, -8, 6, -10.5, 8.2); B.occluder(W, W + 0.3, -4.2, 6, -7.2, 8.2);
   B.occluder(W, 13.2, Y2 - 0.2, Y1 + CH + 0.3, -7.2, -6.9);
+  // ---------- Objetos, notas y sustos ----------
+  B.note({ id: 'n2', p: [10.6, Y2 + 1.45, -10.2], facing: '+z', w: 0.24, h: 0.31 });
+  B.pickup({ id: 'key', item: 'key', p: [10.6, Y2 + 0.01, -9.85], build: (b) => keyProp(b, 10.6, Y2 + 0.004, -9.85), label: 'Recoger llave', msg: 'Una llave con etiqueta: «ホーム西» — andén, lado oeste.' });
+  B.pickup({ id: 'bat2', item: 'battery', p: [-0.95, Y1 + 0.01, -8.4], build: (b) => batteryProp(b, -0.95, Y1, -8.4, 1.2) });
+  B.decal('tally', Signs.tally, [3.0, Y1 + 1.35, -10.2], '+z', 1.0, 0.5, { off: 0.02 });
+  B.decal('grime', Signs.grime, [11.5, Y2 + 1.4, -10.2], '+z', 2.2, 2.2);
+  B.decal('crack', Signs.crack, [-W, ceilF1(-6) - 0.9, -6], '+x', 1.2, 1.2);
+  B.decal('grafA', () => Signs.graffiti('でられない'), [6.7, Y1 + 0.2, -10.2], '+z', 2.4, 0.6);
+  // pasos que bajan detrás de ti por el primer tramo
+  B.trigger({ x0: -W, x1: W, z0: -4.4, z1: -3.2 }, () => Scares.steps(6, 'stair', 0.5), { id: 'z2steps' });
+  // el tubo averiado del segundo tramo revienta al pasar
+  B.trigger({ x0: 6.2, x1: 7.6, z0: -10.2, z1: -7.2 }, (z) => Scares.lampBurst(z, 'f2', [5.6, ceilF2(5.6) - 0.3, -7.3]), { id: 'z2pop' });
+  B.when('act2', true, () => B.trigger({ x0: -W, x1: 3.0, z0: -9.0, z1: -7.6 }, () => Scares.slam([0, Y1 + 1.0, -10.1]), { id: 'z2slam' }));
   // ---------- Sonido ----------
   B.emitter({ type: 'hum', pos: [0, CH - 0.1, 1.3], gain: 0.06, group: 'u' });
   B.emitter({ type: 'hum', pos: [-W + 0.1, ceilF1(-3) - 0.3, -3], gain: 0.045 });
